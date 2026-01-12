@@ -686,8 +686,8 @@ columns_defaults = {
 }
 
 for col, default in columns_defaults.items():
-    if col not in df_trans.columns:
-        df_trans[col] = default
+    if col not in df_filtered.columns:
+        df_filtered[col] = default
 # Calcola tutte le metriche
 moat_metrics = calculate_moat_metrics(df_filtered)
 moat_score = calculate_moat_score(moat_metrics)
