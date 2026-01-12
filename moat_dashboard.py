@@ -143,7 +143,7 @@ def init_all_tables():
     conn.commit()
     
     # Inizializza achievements di default
-    init_default_achievements()
+    #init_default_achievements()
 
 def init_default_achievements():
     """Crea gli achievements di default se non esistono"""
