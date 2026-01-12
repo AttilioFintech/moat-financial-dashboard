@@ -674,7 +674,18 @@ df_filtered = df_trans[
 if len(df_filtered) == 0:
     st.warning("Nessuna transazione nel periodo")
     st.stop()
+# --- colonne di sicurezza per la demo online ---
+# se mancano alcune colonne nel DB, le creiamo con valori di default
 
+columns_defaults = {
+    'is_ricorrente': 'No',
+    'is_energia': 'No',
+    'emoji': '',
+    'archiviato': '',
+    'attiva': 1
+}
+
+for col, default in columns_de
 # Calcola tutte le metriche
 moat_metrics = calculate_moat_metrics(df_filtered)
 moat_score = calculate_moat_score(moat_metrics)
