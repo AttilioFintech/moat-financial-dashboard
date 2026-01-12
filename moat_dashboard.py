@@ -146,9 +146,9 @@ def init_all_tables():
     #init_default_achievements()
 
 def init_default_achievements():
-    """Crea gli achievements di default se non esistono"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Disabilitato per deploy Cloud
+    return
+
     
     achievements = [
         # Moat Defense
