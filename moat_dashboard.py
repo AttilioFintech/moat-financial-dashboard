@@ -415,28 +415,42 @@ def predict_future_metrics(df, months_ahead=3):
 # ==================== CARICAMENTO DATI ====================
 @st.cache_data(ttl=300)
 def load_all_data():
-    """Carica tutti i dati necessari"""
+    """Carica tutti i dati necessari in modo tollerante (compatibile con demo)"""
     conn = get_db_connection()
-    
-    # Transazioni
-    trans_query = "SELECT * FROM Transazioni WHERE eliminata = 0 ORDER BY data DESC"
-    df_trans = pd.read_sql_query(trans_query, conn)
-    df_trans['data'] = pd.to_datetime(df_trans['data'])
-    
-    # Asset
+
+    # --- Transazioni ---
+    try:
+        # prima proviamo con eliminata
+        trans_query = "SELECT * FROM Transazioni WHERE eliminata = 0 ORDER BY data DESC"
+        df_trans = pd.read_sql_query(trans_query, conn)
+    except Exception:
+        try:
+            # se eliminata non esiste, togliamo il filtro
+            trans_query = "SELECT * FROM Transazioni ORDER BY data DESC"
+            df_trans = pd.read_sql_query(trans_query, conn)
+        except Exception:
+            # se la tabella non esiste proprio, usiamo un dataframe vuoto
+            df_trans = pd.DataFrame()
+
+    # conversione data se presente
+    if 'data' in df_trans.columns:
+        df_trans['data'] = pd.to_datetime(df_trans['data'], errors='coerce')
+
+    # moat classification se manca
+    if 'moat_classification' not in df_trans.columns:
+        df_trans['moat_classification'] = None
+
+    # --- Assets ---
     try:
         assets_query = "SELECT * FROM Assets WHERE attivo = 1"
         df_assets = pd.read_sql_query(assets_query, conn)
-        df_assets['data_acquisto'] = pd.to_datetime(df_assets['data_acquisto'])
-    except:
-        df_assets = pd.DataFrame()
-    
-    # Classificazione moat per transazioni uscite
-    if 'moat_classification' not in df_trans.columns:
-        df_trans['moat_classification'] = None
-    
-    return df_trans, df_assets
 
+        if 'data_acquisto' in df_assets.columns:
+            df_assets['data_acquisto'] = pd.to_datetime(df_assets['data_acquisto'], errors='coerce')
+    except Exception:
+        df_assets = pd.DataFrame()
+
+    return df_trans, df_assets
 # ==================== CALCOLO METRICHE (import dalle altre pagine) ====================
 def calculate_moat_metrics(df):
     """Calcola metriche Economic Moat"""
