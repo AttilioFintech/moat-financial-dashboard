@@ -646,6 +646,17 @@ with st.sidebar:
 
 # Carica dati
 df_trans, df_assets = load_all_data()
+# --- sicurezza: garantiamo che la colonna 'data' esista ---
+if df_trans is None or len(df_trans) == 0:
+    # dataframe vuoto
+    df_trans = pd.DataFrame(columns=['data'])
+else:
+    # se manca la colonna data, la creiamo
+    if 'data' not in df_trans.columns:
+        df_trans['data'] = pd.NaT
+
+# assicuriamo formato datetime
+df_trans['data'] = pd.to_datetime(df_trans['data'], errors='coerce')
 
 # Filtro periodo (comune a tutte le pagine)
 col1, col2 = st.columns(2)
