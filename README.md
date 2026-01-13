@@ -44,17 +44,6 @@ aiutarti a costruire un “vantaggio competitivo personale” nelle tue finanze.
 	•	Plotly
 	•	SQLite
 
-⸻
-
-🧩 Struttura del progetto
-	•	moat_dashboard.py → app Streamlit principale
-	•	gestione_conti_casa.db → database demo
-	•	requirements.txt → librerie necessarie
-	•	/assets → (facoltativa) immagini / screenshot demo
-
-⸻
-
-▶️ Come eseguire l’app in locale
 
 pip install -r requirements.txt
 streamlit run moat_dashboard.py
