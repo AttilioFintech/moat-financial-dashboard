@@ -1,50 +1,54 @@
 📄 README — Moat Financial Dashboard
 
-Moat Financial Dashboard è una piattaforma di analisi finanziaria personale che combina:
-	•	gestione transazioni
-	•	analisi delle spese
-	•	classificazione “moat” (vantaggio competitivo personale)
-	•	indicatori di solidità finanziaria
-	•	analisi investimenti e assets
+🏆 Moat Financial Dashboard — Personal Finance Intelligence
 
-Realizzata in Python + Streamlit, con supporto database SQLite.
+Moat Financial Dashboard è una piattaforma avanzata di analisi della finanza personale, progettata per aiutarti a:
+	•	monitorare entrate e uscite
+	•	analizzare le spese nel tempo
+	•	misurare la stabilità finanziaria personale (“moat”)
+	•	valutare asset e investimenti
+	•	migliorare decisioni e abitudini finanziarie
+
+Realizzata in Python + Streamlit, con database SQLite.
 
 ⸻
 
 🚀 Funzionalità principali
-	•	Dashboard completa Entrate / Uscite
-	•	Classificazione automatica transazioni
-	•	Metriche di “Moat Finanziario”
-	•	Analisi ricorrenze e spese fisse/variabili
-	•	Gestione assets e investimenti
-	•	Grafici interattivi
-	•	Supporto database locale e cloud
-	•	Modalità Demo con dati di esempio
+
+✔️ Dashboard completa Entrate/Uscite
+✔️ Filtri per periodo e categorie
+✔️ Gestione transazioni personali
+✔️ Classificazione automatica delle spese
+✔️ Distinzione tra:
+	•	entrate
+	•	uscite fisse
+	•	uscite variabili
+✔️ Analisi ricorrenze e abbonamenti
+✔️ Indicatori di solidità (“Financial Moat”)
+✔️ Gestione assets e investimenti
+✔️ Grafici interattivi
+✔️ Supporto database locale e cloud
+✔️ Modalità Demo con dati di esempio
 
 ⸻
 
-🧠 “Moat finanziario” — cosa significa
-Il Moat finanziario misura:
+🧠 Cos’è il “Moat finanziario”
+
+Il “moat” (fossato difensivo) deriva dal concetto di vantaggio competitivo duraturo.
+
+Nel contesto personale misura:
 	•	stabilità delle entrate
 	•	controllo delle spese
-	•	ricorrenze virtuose
-	•	esposizione a debito
+	•	peso delle ricorrenze
+	•	esposizione al debito
 	•	resilienza nel tempo
 
-Lo scopo è:
+🎯 Obiettivo:
 
-aiutarti a costruire un “vantaggio competitivo personale” nelle tue finanze.
-
-⸻
-
-🛠️ Tecnologie utilizzate
-	•	Python
-	•	Streamlit
-	•	Pandas
-	•	Plotly
-	•	SQLite
+aiutarti a costruire un vantaggio competitivo personale nelle tue finanze.
 
 
-pip install -r requirements.txt
+
+
 streamlit run moat_dashboard.py
 
