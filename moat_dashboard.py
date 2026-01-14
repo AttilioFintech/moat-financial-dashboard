@@ -44,7 +44,7 @@ st.markdown("""
 # ==================== DATABASE & CONNESSIONI ====================
 @st.cache_resource
 def get_db_connection():
-    return sqlite3.connect('gestione_conti_casa.db', check_same_thread=False)
+    return sqlite3.connect('gestione_conti_casa_demo.db', check_same_thread=False)
 
 @st.cache_resource
 def get_groq_client():
@@ -444,6 +444,19 @@ def load_all_data():
     try:
         assets_query = "SELECT * FROM Assets WHERE attivo = 1"
         df_assets = pd.read_sql_query(assets_query, conn)
+        # --- colonne di sicurezza per ASSETS demo ---
+# se mancano alcune colonne nel DB, le creiamo con valori di default
+
+asset_columns_defaults = {
+    'valore_attuale': 0,
+    'prezzo_medio': 0,
+    'quantità': 0,
+    'categoria': 'Generico'
+}
+
+for col, default in asset_columns_defaults.items():
+    if col not in df_assets.columns:
+        df_assets[col] = default
 
         if 'data_acquisto' in df_assets.columns:
             df_assets['data_acquisto'] = pd.to_datetime(df_assets['data_acquisto'], errors='coerce')
