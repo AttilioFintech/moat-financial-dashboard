@@ -2,6 +2,15 @@
 
 🏆 Moat Financial Dashboard — Personal Finance Intelligence
 
+🌍 Demo pubblica
+
+👉 Prova l’app online
+https://attiliofintech-moat-financial-dashboard-moat-dashboard-ytmeas.streamlit.app
+
+Non serve installare nulla:
+apri il link, imposta le date e visualizza dashboard, KPI e grafici interattivi.
+
+
 Moat Financial Dashboard è una piattaforma avanzata di analisi della finanza personale, progettata per aiutarti a:
 	•	monitorare entrate e uscite
 	•	analizzare le spese nel tempo
