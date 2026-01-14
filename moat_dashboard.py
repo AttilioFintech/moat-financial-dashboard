@@ -44,7 +44,7 @@ st.markdown("""
 # ==================== DATABASE & CONNESSIONI ====================
 @st.cache_resource
 def get_db_connection():
-    return sqlite3.connect('gestione_conti_casa.db', check_same_thread=False)
+    return sqlite3.connect('gestione_conti_casa_demo.db', check_same_thread=False)
 
 @st.cache_resource
 def get_groq_client():
