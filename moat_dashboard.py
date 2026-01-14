@@ -446,15 +446,16 @@ def load_all_data():
         df_assets = pd.read_sql_query(assets_query, conn)
         asset_columns_defaults = {
             'valore_attuale': 0,
+            'valore_acquisto': 0,
             'prezzo_medio': 0,
             'quantità': 0,
-            'categoria': 'Generico'
+            'categoria': 'Generico',
+            'data_acquisto': pd.NaT
         }
 
         for col, default in asset_columns_defaults.items():
             if col not in df_assets.columns:
                 df_assets[col] = default
-
 
 
         if 'data_acquisto' in df_assets.columns:
