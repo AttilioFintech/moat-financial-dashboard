@@ -575,35 +575,28 @@ def calculate_investment_metrics(df_trans, assets_df):
 
 
 def calculate_investment_score(metrics):
-    """Calcola Investment Score"""
     score = 0
-    
-    # Allocazione Wide Moat (35)
-    wide_perc = metrics['wide_moat_percentage']
-    if wide_perc >= 15:
-        score += min((wide_perc / 25) * 35, 35)
-    else:
-        score += (wide_perc / 15) * 20
-    
-    # Tasso Investimento (25)
-    inv_rate = metrics['investment_rate']
-    if inv_rate >= 30:
-        score += min((inv_rate / 50) * 25, 25)
-    else:
-        score += (inv_rate / 30) * 15
-    
-    # Crescita Patrimonio (20)
-    growth = max(0, min(metrics['asset_growth'], 100))
-    score += (growth / 20) * 20
-    
-    # Diversificazione (15)
-    score += min((metrics['asset_count'] / 10) * 15, 15)
-    
-    # Qualità (5)
-    if metrics['asset_count'] > 0:
-        score += 5
-    
-    return round(score, 1)
+
+    # totale asset
+    total_assets = metrics.get('total_assets', 0)
+    num_assets = metrics.get('num_assets', 0)
+    asset_types = metrics.get('asset_types', 0)
+
+    # scoring semplice e coerente per demo
+    if total_assets > 0:
+        score += 30
+    if num_assets >= 2:
+        score += 20
+    if asset_types >= 2:
+        score += 20
+
+    # opzionali (se in futuro esistono)
+    wide_perc = metrics.get('wide_moat_percentage', 0)
+    if wide_perc >= 50:
+        score += 10
+
+    return min(score, 100)
+
 
 # ==================== INIZIALIZZA ====================
 init_all_tables()
