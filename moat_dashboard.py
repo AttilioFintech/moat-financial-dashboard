@@ -551,50 +551,28 @@ def classify_transaction_moat(row):
     
     return 'no_moat'
 
-def calculate_investment_metrics(df, assets_df):
-    """Calcola metriche Moat Investing"""
+def calculate_investment_metrics(df_trans, assets_df):
     metrics = {}
-    
-    df_uscite = df[df['direzione'] == 'Uscita'].copy()
-    
-    # Classifica se necessario
-    if 'moat_classification' not in df_uscite.columns or df_uscite['moat_classification'].isna().all():
-        df_uscite['moat_classification'] = df_uscite.apply(classify_transaction_moat, axis=1)
-    
-    moat_alloc = df_uscite.groupby('moat_classification')['importo'].sum()
-    total_spending = df_uscite['importo'].sum()
-    
-    metrics['wide_moat_spending'] = moat_alloc.get('wide_moat', 0)
-    metrics['narrow_moat_spending'] = moat_alloc.get('narrow_moat', 0)
-    metrics['no_moat_spending'] = moat_alloc.get('no_moat', 0)
-    metrics['consumo_spending'] = moat_alloc.get('consumo', 0)
-    metrics['total_spending'] = total_spending
-    
-    if total_spending > 0:
-        metrics['wide_moat_percentage'] = (metrics['wide_moat_spending'] / total_spending) * 100
-        metrics['investment_rate'] = ((metrics['wide_moat_spending'] + metrics['narrow_moat_spending']) / total_spending) * 100
-    else:
-        metrics['wide_moat_percentage'] = 0
-        metrics['investment_rate'] = 0
-    
-    # Asset
-    if len(assets_df) > 0:
-        metrics['total_assets'] = assets_df['valore_attuale'].sum()
-        metrics['asset_count'] = len(assets_df)
-        
-        assets_with_purchase = assets_df[assets_df['valore_acquisto'].notna() & (assets_df['valore_acquisto'] > 0)]
-        if len(assets_with_purchase) > 0:
-            total_invested = assets_with_purchase['valore_acquisto'].sum()
-            current_value = assets_with_purchase['valore_attuale'].sum()
-            metrics['asset_growth'] = ((current_value - total_invested) / total_invested * 100) if total_invested > 0 else 0
-        else:
-            metrics['asset_growth'] = 0
-    else:
+
+    if assets_df is None or assets_df.empty:
         metrics['total_assets'] = 0
-        metrics['asset_count'] = 0
-        metrics['asset_growth'] = 0
-    
+        metrics['num_assets'] = 0
+        metrics['asset_types'] = 0
+        return metrics
+
+    # sicurezza colonne
+    if 'valore' not in assets_df.columns:
+        metrics['total_assets'] = 0
+        metrics['num_assets'] = 0
+        metrics['asset_types'] = 0
+        return metrics
+
+    metrics['total_assets'] = assets_df['valore'].sum()
+    metrics['num_assets'] = len(assets_df)
+    metrics['asset_types'] = assets_df['tipologia'].nunique() if 'tipologia' in assets_df.columns else 0
+
     return metrics
+
 
 def calculate_investment_score(metrics):
     """Calcola Investment Score"""
