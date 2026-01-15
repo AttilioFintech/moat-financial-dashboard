@@ -885,52 +885,75 @@ for k, v in defaults.items():
         st.metric("Investimenti Personali", f"€{moat_metrics['investimenti_personali']:.0f}")
 
 # ==================== PAGINA: ECONOMIC MOAT ====================
-    elif page == "🏰 Economic Moat":
+elif page == "🏰 Economic Moat":
     st.header("🏰 Economic Moat Analysis")
-    
+
     st.info("Questa sezione analizza quanto è **difendibile** la tua posizione finanziaria")
-    
+
     # Score components
     col1, col2 = st.columns([2, 1])
-    
+
     with col1:
         # Radar chart
-        categories = ['Entrate Ricorrenti', 'Tasso Risparmio', 'Investimenti Self', 'Diversificazione', 'Protezione']
-        
-        values = [
-            min(moat_metrics['percentuale_ricorrenti'], 100) / 100 * 30,
-            max(0, min(moat_metrics['tasso_risparmio'], 50)) / 50 * 25,
-            min((moat_metrics['investimenti_personali'] / moat_metrics['entrate_totali'] * 100), 10) / 10 * 20 if moat_metrics['entrate_totali'] > 0 else 0,
-            min(moat_metrics['fonti_entrate'] / 5 * 15, 15),
-            min((moat_metrics['spesa_protezione'] / moat_metrics['entrate_totali'] * 100), 5) / 5 * 10 if moat_metrics['entrate_totali'] > 0 else 0
+        categories = [
+            'Entrate Ricorrenti',
+            'Tasso Risparmio',
+            'Investimenti Self',
+            'Diversificazione',
+            'Protezione'
         ]
-        
+
+        values = [
+            min(moat_metrics.get('percentuale_ricorrenti', 0), 100) / 100 * 30,
+            max(0, min(moat_metrics.get('tasso_risparmio', 0), 50)) / 50 * 25,
+            (
+                min(
+                    (moat_metrics.get('investimenti_personali', 0) /
+                     moat_metrics.get('entrate_totali', 1) * 100),
+                    10
+                ) / 10 * 20
+                if moat_metrics.get('entrate_totali', 0) > 0 else 0
+            ),
+            min(moat_metrics.get('fonti_entrate', 0) / 5 * 15, 15),
+            (
+                min(
+                    (moat_metrics.get('spesa_protezione', 0) /
+                     moat_metrics.get('entrate_totali', 1) * 100),
+                    5
+                ) / 5 * 10
+                if moat_metrics.get('entrate_totali', 0) > 0 else 0
+            )
+        ]
+
         max_values = [30, 25, 20, 15, 10]
-        
+
         fig_radar = go.Figure()
-        
-        fig_radar.add_trace(go.Scatterpolar(
-            r=values,
-            theta=categories,
-            fill='toself',
-            name='Attuale'
-        ))
-        
-        fig_radar.add_trace(go.Scatterpolar(
-            r=max_values,
-            theta=categories,
-            fill='toself',
-            name='Massimo',
-            opacity=0.3
-        ))
-        
-        fig_radar.update_layout(
-            polar=dict(radialaxis=dict(visible=True, range=[0, 30])),
-            showlegend=True,
-            height=450
+
+        fig_radar.add_trace(
+            go.Scatterpolar(
+                r=values,
+                theta=categories,
+                fill='toself',
+                name='Attuale'
+            )
         )
-        
+
+        fig_radar.add_trace(
+            go.Scatterpolar(
+                r=max_values,
+                theta=categories,
+                fill='toself',
+                name='Massimo'
+            )
+        )
+
+        fig_radar.update_layout(
+            polar=dict(radialaxis=dict(visible=True)),
+            showlegend=True
+        )
+
         st.plotly_chart(fig_radar, use_container_width=True)
+
     
     with col2:
         st.subheader("Componenti")
