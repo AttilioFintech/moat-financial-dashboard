@@ -676,6 +676,25 @@ for col, default in columns_defaults.items():
 moat_metrics = calculate_moat_metrics(df_filtered)
 moat_score = calculate_moat_score(moat_metrics)
 invest_metrics = calculate_investment_metrics(df_filtered, df_assets)
+# --- normalizzazione invest_metrics (DEMO SAFE) ---
+defaults = {
+    'total_assets': 0,
+    'num_assets': 0,
+    'asset_types': 0,
+    'asset_growth': 0,
+    'asset_count': 0,
+    'wide_moat_percentage': 0,
+    'wide_moat_spending': 0,
+    'narrow_moat_spending': 0,
+    'no_moat_spending': 0,
+    'consumo_spending': 0,
+    'total_spending': 0,
+    'investment_rate': 0
+}
+
+for k, v in defaults.items():
+    invest_metrics.setdefault(k, v)
+
 invest_score = calculate_investment_score(invest_metrics)
 
 # Genera notifiche
@@ -699,24 +718,13 @@ if page == "📊 Dashboard":
                  delta=f"{invest_score - 70:+.1f} vs target")
     
     with col3:
-        st.markdown('<p class="big-metric">💰</p>', unsafe_allow_html=True)
-        st.metric(
+    st.markdown('<p class="big-metric">💰</p>', unsafe_allow_html=True)
+    st.metric(
         "Patrimonio",
-        f"€{invest_metrics.get('total_assets', 0):,.0f}",
-        f"{invest_metrics.get('asset_growth', 0):+.1f}%"
+        f"€{invest_metrics['total_assets']:,.0f}",
+        delta=f"{invest_metrics['asset_growth']:+.1f}%"
     )
-        asset_growth = invest_metrics.get('asset_growth', 0)
-        delta = f"{asset_growth:+.1f}%"
-        # --- sicurezza metriche investimento (demo) ---
-        defaults = {
-            'asset_growth': 0,
-            'total_assets': 0,
-            'num_assets': 0,
-            'asset_types': 0
-        }
 
-for k, v in defaults.items():
-    invest_metrics.setdefault(k, v)
     
     with col4:
         st.markdown('<p class="big-metric">📈</p>', unsafe_allow_html=True)
@@ -765,7 +773,7 @@ for k, v in defaults.items():
         ))
         
         fig_dual.update_layout(height=300, margin=dict(l=20, r=20, t=50, b=20))
-        st.plotly_chart(fig_dual, use_container_width=True)
+        st.plotly_chart(fig_dual, use_container_width=True,key="dual_gauge")
     
     with col2:
         # Health Score combinato
@@ -793,7 +801,7 @@ for k, v in defaults.items():
             }
         ))
         fig_health.update_layout(height=300)
-        st.plotly_chart(fig_health, use_container_width=True)
+        st.plotly_chart(fig_health, use_container_width=True,key="health_score")
         
         if health_score >= 80:
             st.success("🏆 Situazione finanziaria eccellente!")
@@ -846,7 +854,7 @@ for k, v in defaults.items():
         hovermode='x unified'
     )
     
-    st.plotly_chart(fig_trend, use_container_width=True)
+    st.plotly_chart(fig_trend, use_container_width=True,key="trend_monthly")
     
     # Notifiche importanti in evidenza
     st.subheader("🔔 Notifiche Recenti")
@@ -957,7 +965,7 @@ elif page == "🏰 Economic Moat":
             showlegend=True
         )
 
-        st.plotly_chart(fig_radar, use_container_width=True)
+        st.plotly_chart(fig_radar, use_container_width=True,key="moat_radar")
 
 
 
@@ -989,8 +997,8 @@ elif page == "🏰 Economic Moat":
         st.metric("Fonti Entrate", moat_metrics['fonti_entrate'])
 
 # ==================== PAGINA: MOAT INVESTING ====================
-elif page == "🏰 Economic Moat":
-    st.header("🏰 Economic Moat Analysis")
+elif page == "💎 Moat Investing":
+    st.header("💎 Moat Investing Analysis")
 
     st.info("Questa sezione analizza quanto è **difendibile** la tua posizione finanziaria")
 
@@ -1056,7 +1064,7 @@ elif page == "🏰 Economic Moat":
             showlegend=True
         )
 
-        st.plotly_chart(fig_radar, use_container_width=True)
+        st.plotly_chart(fig_radar, use_container_width=True,key="moat_radar2")
 
     
     with col2:
@@ -1339,7 +1347,7 @@ elif page == "📈 Predizioni":
             height=400
         )
         
-        st.plotly_chart(fig_proj, use_container_width=True)
+        st.plotly_chart(fig_proj, use_container_width=True,key="proj_month")
         
         # Scenario analysis
         st.subheader("🔮 Analisi Scenari")
