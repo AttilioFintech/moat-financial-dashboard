@@ -984,36 +984,75 @@ elif page == "🏰 Economic Moat":
         st.metric("Fonti Entrate", moat_metrics['fonti_entrate'])
 
 # ==================== PAGINA: MOAT INVESTING ====================
-elif page == "💎 Moat Investing":
-    st.header("💎 Moat Investing Analysis")
-    
-    st.info("Questa sezione analizza come stai **investendo** per costruire ricchezza duratura")
-    
-    # Allocazione spese
-    col1, col2 = st.columns(2)
-    
+elif page == "🏰 Economic Moat":
+    st.header("🏰 Economic Moat Analysis")
+
+    st.info("Questa sezione analizza quanto è **difendibile** la tua posizione finanziaria")
+
+    # Score components
+    col1, col2 = st.columns([2, 1])
+
     with col1:
-        # Sunburst
-        moat_data = pd.DataFrame({
-            'labels': ['Totale', 'Wide Moat', 'Narrow Moat', 'No Moat', 'Consumo'],
-            'parents': ['', 'Totale', 'Totale', 'Totale', 'Totale'],
-            'values': [
-                invest_metrics['total_spending'],
-                invest_metrics['wide_moat_spending'],
-                invest_metrics['narrow_moat_spending'],
-                invest_metrics['no_moat_spending'],
-                invest_metrics['consumo_spending']
-            ]
-        })
-        
-        fig_sun = px.sunburst(
-            moat_data,
-            names='labels',
-            parents='parents',
-            values='values',
-            title="Allocazione Spese per Tipo Moat"
+        # Radar chart
+        categories = [
+            'Entrate Ricorrenti',
+            'Tasso Risparmio',
+            'Investimenti Self',
+            'Diversificazione',
+            'Protezione'
+        ]
+
+        values = [
+            min(moat_metrics.get('percentuale_ricorrenti', 0), 100) / 100 * 30,
+            max(0, min(moat_metrics.get('tasso_risparmio', 0), 50)) / 50 * 25,
+            (
+                min(
+                    (moat_metrics.get('investimenti_personali', 0) /
+                     moat_metrics.get('entrate_totali', 1) * 100),
+                    10
+                ) / 10 * 20
+                if moat_metrics.get('entrate_totali', 0) > 0 else 0
+            ),
+            min(moat_metrics.get('fonti_entrate', 0) / 5 * 15, 15),
+            (
+                min(
+                    (moat_metrics.get('spesa_protezione', 0) /
+                     moat_metrics.get('entrate_totali', 1) * 100),
+                    5
+                ) / 5 * 10
+                if moat_metrics.get('entrate_totali', 0) > 0 else 0
+            )
+        ]
+
+        max_values = [30, 25, 20, 15, 10]
+
+        fig_radar = go.Figure()
+
+        fig_radar.add_trace(
+            go.Scatterpolar(
+                r=values,
+                theta=categories,
+                fill='toself',
+                name='Attuale'
+            )
         )
-        st.plotly_chart(fig_sun, use_container_width=True)
+
+        fig_radar.add_trace(
+            go.Scatterpolar(
+                r=max_values,
+                theta=categories,
+                fill='toself',
+                name='Massimo'
+            )
+        )
+
+        fig_radar.update_layout(
+            polar=dict(radialaxis=dict(visible=True)),
+            showlegend=True
+        )
+
+        st.plotly_chart(fig_radar, use_container_width=True)
+
     
     with col2:
         # Tabella allocazione
