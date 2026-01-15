@@ -867,7 +867,8 @@ for k, v in defaults.items():
                     st.rerun()
     else:
         st.success("✅ Nessuna notifica! Tutto sotto controllo.")
-    
+        
+if page == "🏠 Dashboard":  
     # Quick stats
     st.subheader("📊 Statistiche Rapide")
     col1, col2, col3 = st.columns(3)
