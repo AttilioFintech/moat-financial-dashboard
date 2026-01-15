@@ -718,12 +718,12 @@ if page == "📊 Dashboard":
                  delta=f"{invest_score - 70:+.1f} vs target")
     
     with col3:
-    st.markdown('<p class="big-metric">💰</p>', unsafe_allow_html=True)
-    st.metric(
-        "Patrimonio",
-        f"€{invest_metrics['total_assets']:,.0f}",
-        delta=f"{invest_metrics['asset_growth']:+.1f}%"
-    )
+        st.markdown('<p class="big-metric">💰</p>', unsafe_allow_html=True)
+        st.metric(
+            "Patrimonio",
+            f"€{invest_metrics['total_assets']:,.0f}",
+            delta=f"{invest_metrics['asset_growth']:+.1f}%"
+        )
 
     
     with col4:
