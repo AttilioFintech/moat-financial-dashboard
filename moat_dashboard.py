@@ -885,7 +885,7 @@ for k, v in defaults.items():
         st.metric("Investimenti Personali", f"€{moat_metrics['investimenti_personali']:.0f}")
 
 # ==================== PAGINA: ECONOMIC MOAT ====================
-    elif page == "🏰 Economic Moat":
+elif page == "🏰 Economic Moat":
     st.header("🏰 Economic Moat Analysis")
 
     st.info("Questa sezione analizza quanto è **difendibile** la tua posizione finanziaria")
