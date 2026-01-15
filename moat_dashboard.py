@@ -700,7 +700,7 @@ if page == "📊 Dashboard":
     
     with col3:
         st.markdown('<p class="big-metric">💰</p>', unsafe_allow_html=True)
-        st.metric("Patrimonio", f"€{invest_metrics['total_assets']:,.0f}",
+        st.metric("Patrimonio", f"€{invest_metrics['total_assets']:,.0f})",
                  asset_growth = invest_metrics.get('asset_growth', 0)
                   delta = f"{asset_growth:+.1f}%"
                 # --- sicurezza metriche investimento (demo) ---
