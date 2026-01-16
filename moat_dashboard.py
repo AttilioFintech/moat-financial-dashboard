@@ -453,7 +453,11 @@ if page == "📊 Dashboard":
     
     with col2:
         net_worth = float(invest_metrics.get("total_assets", 0) or 0)
-        st.metric("Net Worth", f"€{net_worth:,.0f}", key="metric_networth")
+        st.metric(
+            label="Net Worth (€)",
+            value=round(net_worth),
+            key="metric_networth"
+        )
 
         st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%", key="metric_savings")
     
