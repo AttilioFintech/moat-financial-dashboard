@@ -87,13 +87,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================== DATABASE & CONNESSIONI ====================
-# 1️⃣ Database path con gestione centralizzata
 DB_PATH = "gestione_conti_casa_demo.db"
 
 @st.cache_resource
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    # 2️⃣ PRAGMA WAL mode per performance
     conn.execute("PRAGMA journal_mode=WAL;")
     return conn
 
@@ -216,7 +214,6 @@ def calculate_moat_metrics(df):
     metrics['investimenti_personali'] = 0
     metrics['spesa_protezione'] = 0
     
-    # 3️⃣ Protezione metrica fonti_entrate
     metrics['fonti_entrate'] = (
         entrate['tipo'].nunique()
         if 'tipo' in entrate.columns and not entrate.empty
@@ -309,13 +306,12 @@ with st.sidebar:
     page = st.radio(
         "Navigation",
         ["📊 Dashboard", "📈 Analytics", "🎯 Goals"],
-        label_visibility="collapsed",
-        key="nav_radio"
+        label_visibility="collapsed"
     )
     
     st.markdown("---")
     
-    # CTA PRO - versione élite
+    # CTA PRO
     st.markdown("""
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
                 padding: 20px; border-radius: 10px; text-align: center; color: white;">
@@ -328,7 +324,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("🔒 Request Strategic Access", use_container_width=True, key="cta_sidebar"):
+    if st.button("🔒 Request Strategic Access", use_container_width=True):
         st.info("Request submitted! We'll contact you soon.")
 
 # Carica dati
@@ -359,9 +355,9 @@ for col, default in columns_defaults.items():
 # Filtro periodo
 col1, col2 = st.columns(2)
 with col1:
-    date_from = st.date_input("From", value=datetime.now() - timedelta(days=90), key="date_from")
+    date_from = st.date_input("From", value=datetime.now() - timedelta(days=90))
 with col2:
-    date_to = st.date_input("To", value=datetime.now(), key="date_to")
+    date_to = st.date_input("To", value=datetime.now())
 
 df_filtered = df_trans[
     (df_trans['data'] >= pd.Timestamp(date_from)) & 
@@ -382,10 +378,9 @@ allocation_quality = get_allocation_quality(moat_metrics, invest_metrics)
 # ==================== DASHBOARD PRINCIPALE ====================
 if page == "📊 Dashboard":
     
-    # STEP 1 & 2: KPI Principali grandi e visibili
+    # KPI Principali
     st.markdown("## Your Financial Position")
     
-    # I 3 KPI principali
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -413,7 +408,7 @@ if page == "📊 Dashboard":
     
     st.markdown("---")
     
-    # Gauge principale (semplificato)
+    # Gauge principale
     health_score = (moat_score + allocation_quality) / 2
     
     fig_main = go.Figure(go.Indicator(
@@ -438,7 +433,7 @@ if page == "📊 Dashboard":
     ))
     
     fig_main.update_layout(height=350, margin=dict(l=40, r=40, t=80, b=40))
-    st.plotly_chart(fig_main, use_container_width=True, key="main_health_gauge")
+    st.plotly_chart(fig_main, use_container_width=True)
     
     # Quick insights
     col1, col2 = st.columns(2)
@@ -456,8 +451,8 @@ if page == "📊 Dashboard":
         st.metric("Net Worth (€)", round(net_worth))
         st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%")
     
-    # Sezione secondaria nascosta sotto
-    with st.expander("📊 Detailed Analytics", expanded=False, key="expander_analytics"):
+    # Sezione secondaria - RIMOSSO key=
+    with st.expander("📊 Detailed Analytics", expanded=False):
         
         st.markdown("### Income & Expense Breakdown")
         
@@ -505,7 +500,7 @@ if page == "📊 Dashboard":
                 plot_bgcolor='white'
             )
             
-            st.plotly_chart(fig_trend, use_container_width=True, key="monthly_trend_chart")
+            st.plotly_chart(fig_trend, use_container_width=True)
     
     # PRO CTA
     st.markdown("---")
@@ -524,8 +519,8 @@ if page == "📊 Dashboard":
     </div>
     """, unsafe_allow_html=True)
     
-    # Pricing table aggiornato
-    with st.expander("💰 Pricing Overview - Coming Soon", key="expander_pricing"):
+    # Pricing table - RIMOSSO key=
+    with st.expander("💰 Pricing Overview - Coming Soon"):
         st.markdown("""
         | Plan | Price | Features |
         |------|-------|----------|
@@ -544,7 +539,6 @@ if page == "📊 Dashboard":
 elif page == "📈 Analytics":
     st.markdown("## Financial Analytics")
     
-    # Componenti Moat Score
     st.markdown("### Defensibility Components")
     
     categories = [
@@ -588,7 +582,7 @@ elif page == "📈 Analytics":
         height=450
     )
     
-    st.plotly_chart(fig_radar, use_container_width=True, key="radar_analytics_chart")
+    st.plotly_chart(fig_radar, use_container_width=True)
     
     # Breakdown dettagliato
     col1, col2, col3, col4 = st.columns(4)
@@ -610,7 +604,6 @@ elif page == "🎯 Goals":
     
     st.info("Set and track your financial objectives. PRO members get advanced goal tracking and notifications.")
     
-    # Goal examples
     goals = [
         {"name": "Reach 80% recurring income", "current": moat_metrics['percentuale_ricorrenti'], "target": 80},
         {"name": "Achieve 30% savings rate", "current": max(0, moat_metrics['tasso_risparmio']), "target": 30},
