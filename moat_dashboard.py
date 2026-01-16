@@ -310,12 +310,12 @@ with st.sidebar:
         "Navigation",
         ["📊 Dashboard", "📈 Analytics", "🎯 Goals"],
         label_visibility="collapsed",
-        key="nav_radio"  # 4️⃣ Key esplicita
+        key="nav_radio"
     )
     
     st.markdown("---")
     
-    # 5️⃣ CTA PRO - versione élite
+    # CTA PRO - versione élite
     st.markdown("""
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
                 padding: 20px; border-radius: 10px; text-align: center; color: white;">
@@ -413,7 +413,7 @@ if page == "📊 Dashboard":
     
     st.markdown("---")
     
-    # Gauge principale (semplificato) - 4️⃣ Key esplicita
+    # Gauge principale (semplificato)
     health_score = (moat_score + allocation_quality) / 2
     
     fig_main = go.Figure(go.Indicator(
@@ -453,15 +453,10 @@ if page == "📊 Dashboard":
     
     with col2:
         net_worth = float(invest_metrics.get("total_assets", 0) or 0)
-        st.metric(
-            label="Net Worth (€)",
-            value=round(net_worth),
-            key="metric_networth"
-        )
-
-        st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%", key="metric_savings")
+        st.metric("Net Worth (€)", round(net_worth))
+        st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%")
     
-    # STEP 1 & 3: Sezione secondaria nascosta sotto - 4️⃣ Key esplicita
+    # Sezione secondaria nascosta sotto
     with st.expander("📊 Detailed Analytics", expanded=False, key="expander_analytics"):
         
         st.markdown("### Income & Expense Breakdown")
@@ -469,17 +464,17 @@ if page == "📊 Dashboard":
         col1, col2 = st.columns(2)
         
         with col1:
-            st.metric("Total Income", f"€{moat_metrics['entrate_totali']:,.0f}", key="metric_income")
-            st.metric("Recurring Income", f"{moat_metrics['percentuale_ricorrenti']:.1f}%", key="metric_recurring")
-            st.metric("Income Sources", moat_metrics['fonti_entrate'], key="metric_sources")
+            st.metric("Total Income", f"€{moat_metrics['entrate_totali']:,.0f}")
+            st.metric("Recurring Income", f"{moat_metrics['percentuale_ricorrenti']:.1f}%")
+            st.metric("Income Sources", moat_metrics['fonti_entrate'])
         
         with col2:
-            st.metric("Fixed Expenses", f"€{moat_metrics['uscite_fisse']:,.0f}", key="metric_fixed")
-            st.metric("Variable Expenses", f"€{moat_metrics['uscite_variabili']:,.0f}", key="metric_variable")
+            st.metric("Fixed Expenses", f"€{moat_metrics['uscite_fisse']:,.0f}")
+            st.metric("Variable Expenses", f"€{moat_metrics['uscite_variabili']:,.0f}")
             total_expenses = moat_metrics['uscite_fisse'] + moat_metrics['uscite_variabili']
-            st.metric("Total Expenses", f"€{total_expenses:,.0f}", key="metric_total_exp")
+            st.metric("Total Expenses", f"€{total_expenses:,.0f}")
         
-        # Trend chart - 4️⃣ Key esplicita
+        # Trend chart
         if len(df_filtered) > 0 and 'data' in df_filtered.columns:
             df_filtered['mese'] = df_filtered['data'].dt.to_period('M').astype(str)
             
@@ -512,7 +507,7 @@ if page == "📊 Dashboard":
             
             st.plotly_chart(fig_trend, use_container_width=True, key="monthly_trend_chart")
     
-    # PRO CTA - 5️⃣ Copy élite
+    # PRO CTA
     st.markdown("---")
     st.markdown("""
     <div class="pro-banner">
@@ -529,7 +524,7 @@ if page == "📊 Dashboard":
     </div>
     """, unsafe_allow_html=True)
     
-    # 6️⃣ Pricing table aggiornato - 4️⃣ Key esplicita
+    # Pricing table aggiornato
     with st.expander("💰 Pricing Overview - Coming Soon", key="expander_pricing"):
         st.markdown("""
         | Plan | Price | Features |
@@ -593,23 +588,22 @@ elif page == "📈 Analytics":
         height=450
     )
     
-    # 4️⃣ Key esplicita
     st.plotly_chart(fig_radar, use_container_width=True, key="radar_analytics_chart")
     
     # Breakdown dettagliato
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Recurring Income", f"{moat_metrics['percentuale_ricorrenti']:.0f}%", key="analytics_recurring")
+        st.metric("Recurring Income", f"{moat_metrics['percentuale_ricorrenti']:.0f}%")
     
     with col2:
-        st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.0f}%", key="analytics_savings")
+        st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.0f}%")
     
     with col3:
-        st.metric("Income Sources", moat_metrics['fonti_entrate'], key="analytics_sources")
+        st.metric("Income Sources", moat_metrics['fonti_entrate'])
     
     with col4:
-        st.metric("Asset Types", invest_metrics['asset_types'], key="analytics_assets")
+        st.metric("Asset Types", invest_metrics['asset_types'])
 
 elif page == "🎯 Goals":
     st.markdown("## Financial Goals")
@@ -626,7 +620,6 @@ elif page == "🎯 Goals":
     for idx, goal in enumerate(goals):
         progress = min(goal['current'] / goal['target'], 1.0)
         st.markdown(f"**{goal['name']}**")
-        # 4️⃣ Key esplicita per ogni progress bar
         st.progress(progress, text=f"{goal['current']:.1f} / {goal['target']}")
         st.markdown("---")
 
