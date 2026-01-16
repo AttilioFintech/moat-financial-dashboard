@@ -284,7 +284,7 @@ init_all_tables()
 
 # Sidebar
 with st.sidebar:
-    st.image("https://via.placeholder.com/150x50/1e3a8a/FFFFFF?text=MOAT", use_container_width=True)
+    st.image("assets/logo_moat.png", use_container_width=True)
     
     st.markdown("---")
     
@@ -452,7 +452,9 @@ if page == "📊 Dashboard":
             st.warning("⚠ Defensive gaps detected. Priority action needed.")
     
     with col2:
-        st.metric("Net Worth", f"€{invest_metrics['total_assets']:,.0f}", key="metric_networth")
+        net_worth = float(invest_metrics.get("total_assets", 0) or 0)
+        st.metric("Net Worth", f"€{net_worth:,.0f}", key="metric_networth")
+
         st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%", key="metric_savings")
     
     # STEP 1 & 3: Sezione secondaria nascosta sotto - 4️⃣ Key esplicita
