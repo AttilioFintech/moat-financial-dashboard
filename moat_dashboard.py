@@ -138,6 +138,17 @@ def init_all_tables():
         )
     """)
     
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS AccessRequests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            profile TEXT,
+            note TEXT,
+            request_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            status TEXT DEFAULT 'pending'
+        )
+    """)
+    
     conn.commit()
 
 # ==================== CARICAMENTO DATI ====================
@@ -274,6 +285,75 @@ def get_allocation_quality(moat_metrics, invest_metrics):
     
     return round(score, 1)
 
+# STEP 3: Strategic Insight Generator (rule-based, semplice ma potente)
+def get_strategic_insight(moat_metrics, invest_metrics, moat_score):
+    """
+    Genera UN insight strategico chiave basato sulla situazione finanziaria.
+    Questo è il tipo di insight che giustifica PRO.
+    """
+    insights = []
+    
+    # Regola 1: Income concentration
+    if moat_score < 70 and moat_metrics.get('percentuale_ricorrenti', 0) < 50:
+        impact = round((70 - moat_score) * 0.4)
+        insights.append({
+            'title': 'Income Concentration Risk',
+            'message': f'Your defensibility is limited by income concentration. Increasing recurring income by +15% would raise your Moat Score by ~{impact} points.',
+            'priority': 'high',
+            'category': 'stability'
+        })
+    
+    # Regola 2: Low savings rate
+    if moat_metrics.get('tasso_risparmio', 0) < 15:
+        insights.append({
+            'title': 'Savings Capacity Gap',
+            'message': f'Current savings rate of {moat_metrics["tasso_risparmio"]:.1f}% limits defensive capacity. Target: 20%+ for sustainable wealth building.',
+            'priority': 'high',
+            'category': 'allocation'
+        })
+    
+    # Regola 3: Single income source
+    if moat_metrics.get('fonti_entrate', 0) <= 1:
+        insights.append({
+            'title': 'Single Point of Failure',
+            'message': 'Reliance on one income source creates systemic vulnerability. Adding 1-2 parallel revenue streams would significantly strengthen your position.',
+            'priority': 'critical',
+            'category': 'diversification'
+        })
+    
+    # Regola 4: No investment diversification
+    if invest_metrics.get('asset_types', 0) == 0:
+        insights.append({
+            'title': 'Zero Investment Allocation',
+            'message': 'No tracked investment assets. Even modest allocation (5-10% of income) compounds defensibility over time.',
+            'priority': 'medium',
+            'category': 'growth'
+        })
+    
+    # Regola 5: Strong position
+    if moat_score >= 75 and moat_metrics.get('percentuale_ricorrenti', 0) >= 60:
+        insights.append({
+            'title': 'Strong Defensive Position',
+            'message': f'Your {moat_score:.0f} Moat Score indicates solid financial defensibility. Focus: optimize allocation quality and explore growth opportunities.',
+            'priority': 'low',
+            'category': 'optimization'
+        })
+    
+    # Ritorna l'insight con priorità più alta
+    if not insights:
+        return {
+            'title': 'Build Your Moat',
+            'message': 'Track 90 days of data to unlock personalized strategic insights.',
+            'priority': 'info',
+            'category': 'onboarding'
+        }
+    
+    # Ordina per priorità
+    priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3, 'info': 4}
+    insights.sort(key=lambda x: priority_order.get(x['priority'], 5))
+    
+    return insights[0]
+
 # ==================== INIZIALIZZA ====================
 init_all_tables()
 
@@ -285,47 +365,97 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Claim principale
+    # NUOVO CLAIM - STEP 1: Riposizionamento mentale
     st.markdown("""
-    <div style="padding: 20px; background: #f3f4f6; border-radius: 10px; margin-bottom: 20px;">
-        <p style="font-size: 0.95rem; color: #1e3a8a; font-weight: 600; margin: 0;">
-        Measure how defensible your financial life really is.
+    <div style="padding: 20px; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
+                border-radius: 10px; margin-bottom: 20px;">
+        <p style="font-size: 1.1rem; color: white; font-weight: 700; margin: 0; line-height: 1.4;">
+        Moat is a decision system that measures and strengthens the defensibility of your financial life.
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("### Why Moat?")
+    st.markdown("### Why Defensibility Matters")
     st.markdown("""
-    • **Defensibility Score** - Track your financial resilience  
-    • **Stability Metrics** - Measure income predictability  
-    • **Strategic Allocation** - Optimize resource deployment
+    Moat doesn't measure what you spend.
+    
+    **It measures how hard you are to destabilize.**
+    
+    • Financial shock resistance  
+    • Income predictability & diversity  
+    • Capital allocation quality
     """)
     
     st.markdown("---")
     
     page = st.radio(
         "Navigation",
-        ["📊 Dashboard", "📈 Analytics", "🎯 Goals"],
+        ["📊 Dashboard", "📈 Analytics", "🎯 Goals", "ℹ️ About"],
         label_visibility="collapsed"
     )
     
     st.markdown("---")
     
-    # CTA PRO
+    # STEP 2: CTA PRO come ACCESSO SELETTIVO (non abbonamento)
     st.markdown("""
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
-                padding: 20px; border-radius: 10px; text-align: center; color: white;">
-        <p style="font-size: 0.85rem; margin-bottom: 10px; opacity: 0.9;">
-        Advanced metrics. Deeper insights. Full control.
+                padding: 25px; border-radius: 12px; text-align: center; color: white;">
+        <p style="font-size: 1.3rem; font-weight: 700; margin: 0 0 8px 0;">
+        Moat Strategic Access
         </p>
-        <p style="font-size: 1.1rem; font-weight: bold; margin: 10px 0;">
-        Moat PRO - Coming Soon
+        <p style="font-size: 0.9rem; margin-bottom: 15px; opacity: 0.95; line-height: 1.5;">
+        Complete defensibility analysis<br>
+        Advanced allocation intelligence<br>
+        Strategic insights & scenarios
+        </p>
+        <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 10px; font-style: italic;">
+        Access is limited. Not all requests are accepted.
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("🔒 Request Strategic Access", use_container_width=True):
-        st.info("Request submitted! We'll contact you soon.")
+    # STEP 4: Waitlist seria con database
+    if st.button("🔒 Request Strategic Access", use_container_width=True, type="primary"):
+        st.session_state['show_access_form'] = True
+    
+    # Form di richiesta accesso
+    if st.session_state.get('show_access_form', False):
+        with st.form("access_request_form"):
+            st.markdown("#### Strategic Access Request")
+            email = st.text_input("Email", placeholder="your@email.com")
+            profile = st.selectbox("Profile", [
+                "Freelancer / Consultant",
+                "Entrepreneur",
+                "Senior Professional",
+                "Investor",
+                "Other"
+            ])
+            note = st.text_area("Why Moat? (optional)", placeholder="What are you looking to strengthen?", max_chars=300)
+            
+            submitted = st.form_submit_button("Submit Request")
+            
+            if submitted:
+                if email and '@' in email:
+                    # Salva nel database
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    
+                    try:
+                        cursor.execute("""
+                            INSERT INTO AccessRequests (email, profile, note)
+                            VALUES (?, ?, ?)
+                        """, (email, profile, note))
+                        
+                        conn.commit()
+                        
+                        st.success("✓ Request submitted successfully")
+                        st.info("**Requests are reviewed manually.**\n\nStrategic access is granted selectively based on profile fit and capacity.")
+                        st.session_state['show_access_form'] = False
+                        
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+                else:
+                    st.warning("Please provide a valid email address")
 
 # Carica dati
 df_trans, df_assets = load_all_data()
@@ -375,6 +505,9 @@ invest_metrics = calculate_investment_metrics(df_filtered, df_assets)
 invest_score = calculate_investment_score(invest_metrics)
 allocation_quality = get_allocation_quality(moat_metrics, invest_metrics)
 
+# STEP 3: Genera Strategic Insight
+strategic_insight = get_strategic_insight(moat_metrics, invest_metrics, moat_score)
+
 # ==================== DASHBOARD PRINCIPALE ====================
 if page == "📊 Dashboard":
     
@@ -405,6 +538,37 @@ if page == "📊 Dashboard":
         st.markdown(f'<p style="text-align: center; color: {"green" if delta_alloc >= 0 else "red"};">'
                    f'{"+" if delta_alloc >= 0 else ""}{delta_alloc:.0f} vs benchmark</p>', 
                    unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # STEP 3: Strategic Insight Card (Feature Killer)
+    insight_color_map = {
+        'critical': '#dc2626',
+        'high': '#ea580c',
+        'medium': '#f59e0b',
+        'low': '#10b981',
+        'info': '#3b82f6'
+    }
+    
+    insight_bg = insight_color_map.get(strategic_insight['priority'], '#6b7280')
+    
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, {insight_bg} 0%, {insight_bg}dd 100%); 
+                padding: 25px; border-radius: 12px; color: white; margin: 20px 0;">
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 1.5rem; margin-right: 10px;">💡</span>
+            <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">
+                Strategic Insight
+            </span>
+        </div>
+        <h3 style="margin: 10px 0; font-size: 1.3rem; font-weight: 700;">
+            {strategic_insight['title']}
+        </h3>
+        <p style="margin: 15px 0 0 0; font-size: 1rem; line-height: 1.6; opacity: 0.95;">
+            {strategic_insight['message']}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -451,7 +615,7 @@ if page == "📊 Dashboard":
         st.metric("Net Worth (€)", round(net_worth))
         st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%")
     
-    # Sezione secondaria - RIMOSSO key=
+    # Sezione secondaria
     with st.expander("📊 Detailed Analytics", expanded=False):
         
         st.markdown("### Income & Expense Breakdown")
@@ -502,39 +666,71 @@ if page == "📊 Dashboard":
             
             st.plotly_chart(fig_trend, use_container_width=True)
     
-    # PRO CTA
+    # PRO CTA - STEP 2: Riposizionamento come Sistema Élite
     st.markdown("---")
     st.markdown("""
     <div class="pro-banner">
-        <h2 style="margin: 0 0 15px 0;">🔒 Unlock Deeper Insights with Moat PRO</h2>
-        <p style="font-size: 1.1rem; margin-bottom: 20px;">
-        Advanced metrics • Long-term projections • Export capabilities • Priority support
+        <h2 style="margin: 0 0 10px 0; font-size: 1.8rem;">Moat Strategic Access</h2>
+        <p style="font-size: 1rem; margin-bottom: 5px; opacity: 0.9;">
+        Not a subscription. A relationship.
+        </p>
+        <p style="font-size: 1.15rem; margin: 20px 0; line-height: 1.6; font-weight: 500;">
+        Complete defensibility analysis • Long-term scenario modeling<br>
+        Allocation intelligence • Strategic advisory insights
+        </p>
+        <p style="font-size: 0.85rem; opacity: 0.8; font-style: italic; margin-bottom: 25px;">
+        Access is limited and granted selectively based on profile fit.
         </p>
         <div>
-            <a href="#" class="pro-cta">Request Strategic Access</a>
-            <a href="#" class="pro-cta" style="background: transparent; color: white; border: 2px solid white;">
-            View Demo
-            </a>
+            <a href="#access" class="pro-cta">🔒 Request Access</a>
+            <p style="font-size: 0.75rem; margin-top: 15px; opacity: 0.7;">
+            Requests are reviewed manually. Not all requests are accepted.
+            </p>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Pricing table - RIMOSSO key=
-    with st.expander("💰 Pricing Overview - Coming Soon"):
+    # Pricing table - STEP 2: Riposizionamento Pricing
+    with st.expander("💎 Access Tiers"):
         st.markdown("""
-        | Plan | Price | Features |
-        |------|-------|----------|
-        | **Free / Demo** | €0 | Basic dashboard, 90-day history |
-        | **PRO Monthly** | €29/mo | Full Moat Score, advanced metrics, unlimited history |
-        | **PRO Annual** | €290/year | All PRO features + priority support + early access |
+        ### Moat Access Structure
         
-        **PRO includes:**
+        **🌐 Moat Core** (Public / Demo)
+        - Basic defensibility dashboard
+        - 90-day data window
+        - Moat Score calculation
+        - Limited insights
+        
+        **Purpose:** Understand the framework
+        
+        ---
+        
+        **👑 Moat Strategic Access** (Selective)
         - Complete defensibility analysis
-        - Investment quality metrics  
-        - Long-term trend analysis
-        - Data export & insights
-        - Priority access to new features
+        - Unlimited historical data
+        - Advanced scenario modeling
+        - Strategic insights & allocation intelligence
+        - Long-term trend projections
+        - Data export capabilities
+        
+        **Investment:** €290/year or €49/month (by invitation only)
+        
+        **Important:** Access is granted selectively. Not all requests are accepted.  
+        We prioritize individuals with:
+        - Multiple income streams or complex financial situations
+        - Significant capital allocation decisions
+        - High autonomy in financial planning
+        - Long-term strategic orientation
+        
+        ---
+        
+        📧 **How to Request Access**
+        
+        Click "Request Strategic Access" in the sidebar.  
+        Requests are reviewed manually within 48-72 hours.
         """)
+        
+        st.info("**Philosophy:** Moat Strategic Access is not about features.  \nIt's about giving the right tools to people who will use them to build something defensible.")
 
 elif page == "📈 Analytics":
     st.markdown("## Financial Analytics")
@@ -616,6 +812,107 @@ elif page == "🎯 Goals":
         st.progress(progress, text=f"{goal['current']:.1f} / {goal['target']}")
         st.markdown("---")
 
-# Footer
+elif page == "ℹ️ About":
+    st.markdown("## What is Moat?")
+    
+    st.markdown("""
+    ### A decision system that measures and strengthens the defensibility of your financial life.
+    
+    ---
+    
+    #### The Core Principle
+    
+    **Moat doesn't measure what you spend.**  
+    **It measures how hard you are to destabilize.**
+    
+    Traditional personal finance tools focus on:
+    - Budgeting
+    - Expense tracking
+    - Savings goals
+    
+    Moat focuses on:
+    - **Income stability** — How predictable is your cash flow?
+    - **Diversification** — How many failure points exist?
+    - **Allocation quality** — How strategically deployed is your capital?
+    - **Shock resistance** — How long can you sustain disruption?
+    
+    ---
+    
+    #### Who is Moat For?
+    
+    Moat is designed for individuals with:
+    
+    ✓ **High financial autonomy** — You make your own decisions  
+    ✓ **Multiple income streams** — Freelance, business, investments  
+    ✓ **Strategic mindset** — You think in systems, not tactics  
+    ✓ **Long-term orientation** — You're building, not just managing
+    
+    Moat is **not** for:
+    - Beginners learning to budget
+    - Household expense tracking
+    - Simple salary-based finances
+    
+    ---
+    
+    #### The Moat Score
+    
+    Your **Moat Score** (0-100) measures financial defensibility across:
+    
+    1. **Income Stability** (30 pts) — Recurring vs. volatile income
+    2. **Savings Capacity** (25 pts) — Margin between income and expenses
+    3. **Diversification** (15 pts) — Number of independent income sources
+    4. **Asset Allocation** (30 pts) — Quality and diversity of investments
+    
+    **Target:** 70+ for sustainable defensibility  
+    **Elite:** 85+ indicates institutional-grade resilience
+    
+    ---
+    
+    #### Strategic Access vs. Core
+    
+    **Moat Core** (Free)
+    - Understand the framework
+    - See your current score
+    - Track basic metrics
+    
+    **Moat Strategic Access** (Selective)
+    - Complete analysis & scenario modeling
+    - Advanced allocation intelligence
+    - Long-term trend projections
+    - Strategic insights that feel like consulting
+    
+    **Access is not automatic.** Requests are reviewed manually.
+    
+    ---
+    
+    #### Philosophy
+    
+    > "The best personal finance tool is not the one that tracks every euro.  
+    > It's the one that makes you harder to break."
+    
+    Moat is built for people who:
+    - Don't need to be told to save
+    - Want to optimize, not just monitor
+    - Think about financial decisions strategically
+    - Build systems, not spreadsheets
+    
+    ---
+    
+    **Ready to measure your defensibility?**
+    
+    Start with Moat Core, then request Strategic Access when you're ready for deeper analysis.
+    """)
+    
+    st.markdown("---")
+    
+    if st.button("🔒 Request Strategic Access", type="primary", use_container_width=True):
+        st.session_state['show_access_form'] = True
+        st.rerun()
+
+# Footer - STEP 1: Messaging coerente
 st.markdown("---")
-st.caption(f"🏆 Moat Financial Dashboard | Last updated: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.caption("🏆 **Moat** — Measure and strengthen the defensibility of your financial life")
+with col2:
+    st.caption(f"Updated: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
