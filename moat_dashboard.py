@@ -8,7 +8,7 @@ from groq import Groq
 import json
 import numpy as np
 
-# Configurazione pagina
+# ==================== CONFIGURAZIONE PAGINA ====================
 st.set_page_config(
     page_title="Moat Financial Dashboard",
     page_icon="🏆",
@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Custom - Colore dominante: Deep Blue (#1e3a8a)
+# ==================== CSS CUSTOM ====================
 st.markdown("""
 <style>
     :root {
@@ -38,6 +38,36 @@ st.markdown("""
         color: #6b7280;
         text-align: center;
         font-weight: 500;
+    }
+    
+    .vulnerability-card {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        padding: 25px;
+        border-radius: 12px;
+        color: white;
+        margin: 15px 0;
+    }
+    
+    .vulnerability-card.medium {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    }
+    
+    .vulnerability-card.low {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    }
+    
+    .archetype-card {
+        border: 2px solid var(--moat-blue);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 15px 0;
+        background: white;
+    }
+    
+    .archetype-card:hover {
+        box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
     }
     
     .pro-banner {
@@ -62,31 +92,10 @@ st.markdown("""
         margin: 10px;
         text-decoration: none;
     }
-    
-    .claim {
-        font-size: 1.5rem;
-        color: var(--moat-blue);
-        font-weight: 600;
-        margin: 20px 0;
-    }
-    
-    .secondary-section {
-        margin-top: 40px;
-        padding-top: 30px;
-        border-top: 2px solid #e5e7eb;
-    }
-    
-    .achievement-badge {
-        background: linear-gradient(135deg, var(--moat-blue) 0%, var(--moat-light) 100%);
-        padding: 15px;
-        border-radius: 10px;
-        color: white;
-        margin: 10px 0;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== DATABASE & CONNESSIONI ====================
+# ==================== DATABASE ====================
 DB_PATH = "gestione_conti_casa_demo.db"
 
 @st.cache_resource
@@ -100,7 +109,7 @@ def get_groq_client():
     try:
         api_key = st.secrets["groq"]["api_key"]
         return Groq(api_key=api_key)
-    except Exception as e:
+    except Exception:
         return None
 
 # ==================== INIZIALIZZAZIONE TABELLE ====================
@@ -108,6 +117,34 @@ def init_all_tables():
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # Tabella Access Requests
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS AccessRequests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            profile TEXT,
+            note TEXT,
+            request_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            status TEXT DEFAULT 'pending',
+            review_date DATETIME,
+            reviewed_by TEXT,
+            decision_note TEXT
+        )
+    """)
+    
+    # Tabella Email Log
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS EmailLog (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            recipient TEXT,
+            subject TEXT,
+            body TEXT,
+            sent_date DATETIME,
+            status TEXT
+        )
+    """)
+    
+    # Tabella Notifications
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Notifications (
             id INTEGER PRIMARY KEY,
@@ -123,6 +160,7 @@ def init_all_tables():
         )
     """)
     
+    # Tabella Achievements
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Achievements (
             id INTEGER PRIMARY KEY,
@@ -138,20 +176,250 @@ def init_all_tables():
         )
     """)
     
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS AccessRequests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT,
-            profile TEXT,
-            note TEXT,
-            request_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-            status TEXT DEFAULT 'pending'
-        )
-    """)
-    
     conn.commit()
 
+# ==================== FUNZIONI DI CALCOLO ====================
+
+def calculate_emergency_months(moat_metrics):
+    """Calcola quanti mesi di copertura ha l'emergency fund"""
+    monthly_expenses = (moat_metrics['uscite_fisse'] + moat_metrics['uscite_variabili'])
+    monthly_income = moat_metrics['entrate_totali']
+    monthly_savings = monthly_income - monthly_expenses
+    
+    # Stima conservativa: assumiamo liquidità = 3x risparmio mensile
+    estimated_liquidity = max(monthly_savings * 3, 0)
+    
+    if monthly_expenses > 0:
+        return round(estimated_liquidity / monthly_expenses, 1)
+    return 0
+
+def calculate_debt_ratio(moat_metrics):
+    """Calcola il rapporto debito/reddito (stimato)"""
+    # Stima: uscite fisse includono rate di debito
+    # Assumiamo che ~40% delle uscite fisse siano debiti
+    estimated_debt_payments = moat_metrics['uscite_fisse'] * 0.4
+    
+    if moat_metrics['entrate_totali'] > 0:
+        return round((estimated_debt_payments / moat_metrics['entrate_totali']) * 100, 1)
+    return 0
+
+def calculate_expense_growth(moat_metrics):
+    """Calcola la crescita delle spese (placeholder - richiede dati storici)"""
+    # In una versione completa, confronteresti periodo corrente vs. periodo precedente
+    # Per ora, placeholder con logica semplificata
+    fixed_ratio = moat_metrics['uscite_fisse'] / (moat_metrics['uscite_fisse'] + moat_metrics['uscite_variabili']) if (moat_metrics['uscite_fisse'] + moat_metrics['uscite_variabili']) > 0 else 0
+    
+    # Se le uscite fisse sono >60% del totale, segnala crescita
+    if fixed_ratio > 0.6:
+        return round((fixed_ratio - 0.6) * 100, 1)
+    return 0
+
+# ==================== STRATEGIC INSIGHTS ====================
+
+def get_structural_vulnerabilities(moat_metrics, invest_metrics, moat_score):
+    """
+    STEP 1: Vulnerabilità strutturali (non metriche)
+    Framing élite: rischi sistemici, non errori personali
+    """
+    vulnerabilities = []
+    
+    # 1. Emergency Fund Analysis
+    months_coverage = calculate_emergency_months(moat_metrics)
+    if months_coverage < 6:
+        vulnerabilities.append({
+            'title': 'Structural Risk Detected',
+            'message': f'Your financial system can absorb only ~{months_coverage} months of income disruption. Target: 6+ months for institutional-grade resilience.',
+            'impact_points': round((6 - months_coverage) * 3),
+            'priority': 'critical',
+            'category': 'stability'
+        })
+    
+    # 2. Debt Ratio Analysis
+    debt_ratio = calculate_debt_ratio(moat_metrics)
+    if debt_ratio > 30:
+        vulnerabilities.append({
+            'title': 'Leverage Exposure',
+            'message': f'Debt obligations ({debt_ratio:.0f}% of income) reduce your strategic flexibility during income shocks. Optimal range: <30%.',
+            'impact_points': round((debt_ratio - 30) * 0.5),
+            'priority': 'high',
+            'category': 'flexibility'
+        })
+    
+    # 3. Expense Growth Analysis
+    expense_growth = calculate_expense_growth(moat_metrics)
+    if expense_growth > 5:
+        vulnerabilities.append({
+            'title': 'Cost Creep Risk',
+            'message': f'Fixed expenses are growing faster than income, weakening defensibility. This trend compounds vulnerability over time.',
+            'impact_points': round(expense_growth * 2),
+            'priority': 'high',
+            'category': 'sustainability'
+        })
+    
+    # 4. Income Concentration
+    if moat_metrics.get('fonti_entrate', 0) <= 1:
+        vulnerabilities.append({
+            'title': 'Single Point of Failure',
+            'message': 'Reliance on one income source creates systemic vulnerability. Adding 1-2 parallel revenue streams would significantly strengthen your position.',
+            'impact_points': 15,
+            'priority': 'critical',
+            'category': 'diversification'
+        })
+    
+    # Ordina per priorità
+    priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+    vulnerabilities.sort(key=lambda x: priority_order.get(x['priority'], 5))
+    
+    return vulnerabilities
+
+def get_strategic_archetypes():
+    """
+    STEP 2: Strategic Archetypes (non demo utenti)
+    Modelli di rischio, non profili demografici
+    """
+    return {
+        'independent_operator': {
+            'label': 'Independent Operator',
+            'description': 'Freelancer, consultant, or solo professional',
+            'key_risks': [
+                'Income concentration (single client dependency)',
+                'Revenue volatility during market downturns',
+                'Limited operational leverage'
+            ],
+            'moat_priorities': [
+                ('Recurring Income', 40, 'Critical for stability'),
+                ('Emergency Fund', 35, '6-12 months recommended'),
+                ('Income Diversification', 25, 'Minimum 3 sources')
+            ],
+            'benchmark_score': 65,
+            'typical_vulnerabilities': [
+                'Low recurring income ratio (<40%)',
+                'Insufficient emergency fund (<3 months)',
+                'High time-for-money dependency'
+            ]
+        },
+        
+        'capital_allocator': {
+            'label': 'Capital Allocator',
+            'description': 'Entrepreneur or business owner',
+            'key_risks': [
+                'Business concentration risk',
+                'Liquidity constraints during growth phases',
+                'Personal/business finance entanglement'
+            ],
+            'moat_priorities': [
+                ('Asset Diversification', 40, 'Separate personal capital'),
+                ('Savings Rate', 35, 'Reinvestment capacity'),
+                ('Income Stability', 25, 'Predictable cash flow')
+            ],
+            'benchmark_score': 70,
+            'typical_vulnerabilities': [
+                'Over-allocation to single business',
+                'Undiversified asset base',
+                'Irregular personal income extraction'
+            ]
+        },
+        
+        'hybrid_strategist': {
+            'label': 'Hybrid Income Strategist',
+            'description': 'W-2 employee + side income streams',
+            'key_risks': [
+                'Time allocation inefficiency',
+                'Parallel income stream fragility',
+                'Opportunity cost miscalculation'
+            ],
+            'moat_priorities': [
+                ('Income Quality', 40, 'Leverage vs. time trade-off'),
+                ('Allocation Quality', 35, 'Strategic capital deployment'),
+                ('Diversification', 25, 'Sustainable parallel streams')
+            ],
+            'benchmark_score': 72,
+            'typical_vulnerabilities': [
+                'Side income not truly defensible',
+                'Suboptimal time-to-revenue ratio',
+                'Unclear strategic direction'
+            ]
+        }
+    }
+
+# ==================== EMAIL AUTOMATION ====================
+
+def send_access_decision_email(email, status, profile):
+    """
+    STEP 3: Email automation per decisioni accesso
+    Tono: status-elevating, non supplicante
+    """
+    
+    if status == 'approved':
+        subject = "Strategic Access — Granted"
+        body = f"""Your request has been reviewed.
+You've been granted Strategic Access to Moat.
+
+Profile: {profile}
+Access Level: Full Strategic Analysis
+
+Next Steps:
+→ Log in at app.moat.financial
+→ Your account has been upgraded
+→ All features are now available
+
+This access includes:
+• Complete defensibility analysis
+• Advanced scenario modeling
+• Long-term trajectory projections
+• Strategic allocation intelligence
+
+—
+Moat Strategic Team
+"""
+    
+    elif status == 'waitlist':
+        subject = "Strategic Access — Priority Queue"
+        body = f"""Your request has been reviewed.
+
+Access is currently limited.
+Your profile has been added to the priority queue.
+
+Profile: {profile}
+Queue Position: You'll be notified when capacity opens
+
+Why the wait:
+Strategic Access is granted selectively to maintain analysis quality and ensure meaningful engagement with each member.
+
+Expected Timeline: 2-4 weeks
+
+—
+Moat Strategic Team
+"""
+    
+    else:  # rejected
+        subject = "Strategic Access — Not Available"
+        body = f"""Your request has been reviewed.
+
+Based on current capacity and profile fit, we're unable to grant access at this time.
+
+This doesn't reflect on your profile — it's a capacity constraint.
+
+Alternative:
+Moat Core remains available for basic defensibility tracking.
+
+—
+Moat Strategic Team
+"""
+    
+    # Log email (in produzione, qui invieresti via SendGrid/AWS SES)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO EmailLog (recipient, subject, body, sent_date, status)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP, 'sent')
+    """, (email, subject, body))
+    conn.commit()
+    
+    return True
+
 # ==================== CARICAMENTO DATI ====================
+
 @st.cache_data(ttl=300)
 def load_all_data():
     conn = get_db_connection()
@@ -162,7 +430,7 @@ def load_all_data():
     except Exception:
         df_trans = pd.DataFrame()
     
-    if 'data' in df_trans.columns:
+    if not df_trans.empty and 'data' in df_trans.columns:
         df_trans['data'] = pd.to_datetime(df_trans['data'], errors='coerce')
     
     if 'moat_classification' not in df_trans.columns:
@@ -176,8 +444,8 @@ def load_all_data():
     
     return df_trans, df_assets
 
-# ==================== CALCOLO METRICHE ====================
 def calculate_moat_metrics(df):
+    """Calcola metriche finanziarie base"""
     metrics = {}
     
     if df is None or len(df) == 0:
@@ -234,6 +502,7 @@ def calculate_moat_metrics(df):
     return metrics
 
 def calculate_moat_score(metrics):
+    """Calcola Moat Score 0-100"""
     score = 0
     score += min((metrics['percentuale_ricorrenti'] / 100) * 30, 30)
     tasso = max(0, min(metrics['tasso_risparmio'], 50))
@@ -242,6 +511,7 @@ def calculate_moat_score(metrics):
     return round(score, 1)
 
 def calculate_investment_metrics(df_trans, assets_df):
+    """Calcola metriche investimenti"""
     metrics = {
         'total_assets': 0,
         'num_assets': 0,
@@ -259,6 +529,7 @@ def calculate_investment_metrics(df_trans, assets_df):
     return metrics
 
 def calculate_investment_score(metrics):
+    """Calcola punteggio investimenti"""
     score = 0
     if metrics.get('total_assets', 0) > 0:
         score += 30
@@ -269,134 +540,44 @@ def calculate_investment_score(metrics):
     return min(score, 100)
 
 def get_allocation_quality(moat_metrics, invest_metrics):
-    """Calcola un punteggio di qualità dell'allocazione 0-100"""
+    """Calcola qualità allocazione 0-100"""
     score = 0
-    
-    # Ricorrenza entrate (30 punti)
     score += min(moat_metrics.get('percentuale_ricorrenti', 0) * 0.3, 30)
-    
-    # Diversificazione asset (30 punti)
     asset_types = invest_metrics.get('asset_types', 0)
     score += min(asset_types * 10, 30)
-    
-    # Tasso risparmio (40 punti)
     tasso = max(0, moat_metrics.get('tasso_risparmio', 0))
     score += min(tasso * 0.8, 40)
-    
     return round(score, 1)
-
-# STEP 3: Strategic Insight Generator (rule-based, semplice ma potente)
-def get_strategic_insight(moat_metrics, invest_metrics, moat_score):
-    """
-    Genera UN insight strategico chiave basato sulla situazione finanziaria.
-    Questo è il tipo di insight che giustifica PRO.
-    """
-    insights = []
-    
-    # Regola 1: Income concentration
-    if moat_score < 70 and moat_metrics.get('percentuale_ricorrenti', 0) < 50:
-        impact = round((70 - moat_score) * 0.4)
-        insights.append({
-            'title': 'Income Concentration Risk',
-            'message': f'Your defensibility is limited by income concentration. Increasing recurring income by +15% would raise your Moat Score by ~{impact} points.',
-            'priority': 'high',
-            'category': 'stability'
-        })
-    
-    # Regola 2: Low savings rate
-    if moat_metrics.get('tasso_risparmio', 0) < 15:
-        insights.append({
-            'title': 'Savings Capacity Gap',
-            'message': f'Current savings rate of {moat_metrics["tasso_risparmio"]:.1f}% limits defensive capacity. Target: 20%+ for sustainable wealth building.',
-            'priority': 'high',
-            'category': 'allocation'
-        })
-    
-    # Regola 3: Single income source
-    if moat_metrics.get('fonti_entrate', 0) <= 1:
-        insights.append({
-            'title': 'Single Point of Failure',
-            'message': 'Reliance on one income source creates systemic vulnerability. Adding 1-2 parallel revenue streams would significantly strengthen your position.',
-            'priority': 'critical',
-            'category': 'diversification'
-        })
-    
-    # Regola 4: No investment diversification
-    if invest_metrics.get('asset_types', 0) == 0:
-        insights.append({
-            'title': 'Zero Investment Allocation',
-            'message': 'No tracked investment assets. Even modest allocation (5-10% of income) compounds defensibility over time.',
-            'priority': 'medium',
-            'category': 'growth'
-        })
-    
-    # Regola 5: Strong position
-    if moat_score >= 75 and moat_metrics.get('percentuale_ricorrenti', 0) >= 60:
-        insights.append({
-            'title': 'Strong Defensive Position',
-            'message': f'Your {moat_score:.0f} Moat Score indicates solid financial defensibility. Focus: optimize allocation quality and explore growth opportunities.',
-            'priority': 'low',
-            'category': 'optimization'
-        })
-    
-    # Ritorna l'insight con priorità più alta
-    if not insights:
-        return {
-            'title': 'Build Your Moat',
-            'message': 'Track 90 days of data to unlock personalized strategic insights.',
-            'priority': 'info',
-            'category': 'onboarding'
-        }
-    
-    # Ordina per priorità
-    priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3, 'info': 4}
-    insights.sort(key=lambda x: priority_order.get(x['priority'], 5))
-    
-    return insights[0]
 
 # ==================== INIZIALIZZA ====================
 init_all_tables()
 
-# ==================== UI PRINCIPALE ====================
-
-# Sidebar
+# ==================== SIDEBAR ====================
 with st.sidebar:
-    st.image("assets/logo_moat.png", use_container_width=True)
+    st.image("https://via.placeholder.com/300x100/1e3a8a/ffffff?text=MOAT", use_container_width=True)
     
     st.markdown("---")
     
-    # NUOVO CLAIM - STEP 1: Riposizionamento mentale
+    # Claim principale
     st.markdown("""
     <div style="padding: 20px; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
                 border-radius: 10px; margin-bottom: 20px;">
         <p style="font-size: 1.1rem; color: white; font-weight: 700; margin: 0; line-height: 1.4;">
-        Moat is a decision system that measures and strengthens the defensibility of your financial life.
+        Moat helps you decide where to allocate your time, energy, and capital to maximize long-term financial resilience.
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("### Why Defensibility Matters")
-    st.markdown("""
-    Moat doesn't measure what you spend.
-    
-    **It measures how hard you are to destabilize.**
-    
-    • Financial shock resistance  
-    • Income predictability & diversity  
-    • Capital allocation quality
-    """)
-    
-    st.markdown("---")
-    
+    st.markdown("### Navigation")
     page = st.radio(
-        "Navigation",
-        ["📊 Dashboard", "📈 Analytics", "🎯 Goals", "ℹ️ About"],
+        "",
+        ["📊 Dashboard", "🎯 Strategic Archetypes", "🔍 Vulnerabilities", "ℹ️ About"],
         label_visibility="collapsed"
     )
     
     st.markdown("---")
     
-    # STEP 2: CTA PRO come ACCESSO SELETTIVO (non abbonamento)
+    # CTA Strategic Access
     st.markdown("""
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
                 padding: 25px; border-radius: 12px; text-align: center; color: white;">
@@ -414,29 +595,26 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
-    # STEP 4: Waitlist seria con database
     if st.button("🔒 Request Strategic Access", use_container_width=True, type="primary"):
         st.session_state['show_access_form'] = True
     
-    # Form di richiesta accesso
+    # Form richiesta accesso
     if st.session_state.get('show_access_form', False):
         with st.form("access_request_form"):
             st.markdown("#### Strategic Access Request")
             email = st.text_input("Email", placeholder="your@email.com")
             profile = st.selectbox("Profile", [
-                "Freelancer / Consultant",
-                "Entrepreneur",
-                "Senior Professional",
-                "Investor",
+                "Independent Operator (Freelancer/Consultant)",
+                "Capital Allocator (Entrepreneur)",
+                "Hybrid Strategist (Employee + Side Income)",
                 "Other"
             ])
-            note = st.text_area("Why Moat? (optional)", placeholder="What are you looking to strengthen?", max_chars=300)
+            note = st.text_area("Why Moat?", placeholder="What are you looking to strengthen?", max_chars=300)
             
             submitted = st.form_submit_button("Submit Request")
             
             if submitted:
                 if email and '@' in email:
-                    # Salva nel database
                     conn = get_db_connection()
                     cursor = conn.cursor()
                     
@@ -445,7 +623,6 @@ with st.sidebar:
                             INSERT INTO AccessRequests (email, profile, note)
                             VALUES (?, ?, ?)
                         """, (email, profile, note))
-                        
                         conn.commit()
                         
                         st.success("✓ Request submitted successfully")
@@ -455,20 +632,16 @@ with st.sidebar:
                     except Exception as e:
                         st.error(f"Error: {e}")
                 else:
-                    st.warning("Please provide a valid email address")
+                    st.warning("Please provide a valid email")
 
-# Carica dati
+# ==================== CARICA DATI ====================
 df_trans, df_assets = load_all_data()
 
 if df_trans is None or len(df_trans) == 0:
     df_trans = pd.DataFrame(columns=['data'])
-else:
-    if 'data' not in df_trans.columns:
-        df_trans['data'] = pd.NaT
 
 df_trans['data'] = pd.to_datetime(df_trans['data'], errors='coerce')
 
-# Assicura colonne necessarie
 columns_defaults = {
     'is_ricorrente': 'No',
     'direzione': 'Uscita',
@@ -495,7 +668,7 @@ df_filtered = df_trans[
 ]
 
 if len(df_filtered) == 0:
-    st.warning("No transactions in this period. Using demo data for visualization.")
+    st.warning("No transactions in this period. Using demo data.")
     df_filtered = df_trans.tail(50) if len(df_trans) > 0 else df_trans
 
 # Calcola metriche
@@ -505,80 +678,76 @@ invest_metrics = calculate_investment_metrics(df_filtered, df_assets)
 invest_score = calculate_investment_score(invest_metrics)
 allocation_quality = get_allocation_quality(moat_metrics, invest_metrics)
 
-# STEP 3: Genera Strategic Insight
-strategic_insight = get_strategic_insight(moat_metrics, invest_metrics, moat_score)
+# Vulnerabilità strutturali
+vulnerabilities = get_structural_vulnerabilities(moat_metrics, invest_metrics, moat_score)
 
-# ==================== DASHBOARD PRINCIPALE ====================
+# ==================== PAGINE ====================
+
 if page == "📊 Dashboard":
-    
-    # KPI Principali
     st.markdown("## Your Financial Position")
     
+    # KPI Principali
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown('<p class="kpi-label">Defensibility Score</p>', unsafe_allow_html=True)
         st.markdown(f'<p class="big-kpi">{moat_score:.0f}</p>', unsafe_allow_html=True)
-        delta_def = moat_score - 70
-        st.markdown(f'<p style="text-align: center; color: {"green" if delta_def >= 0 else "red"};">'
-                   f'{"+" if delta_def >= 0 else ""}{delta_def:.0f} vs target</p>', 
-                   unsafe_allow_html=True)
+        delta = moat_score - 70
+        st.markdown(f'<p style="text-align: center; color: {"green" if delta >= 0 else "red"};">'
+                   f'{"+" if delta >= 0 else ""}{delta:.0f} vs target</p>', unsafe_allow_html=True)
     
     with col2:
         st.markdown('<p class="kpi-label">Stability Score</p>', unsafe_allow_html=True)
         stability = moat_metrics['percentuale_ricorrenti']
         st.markdown(f'<p class="big-kpi">{stability:.0f}%</p>', unsafe_allow_html=True)
-        st.markdown(f'<p style="text-align: center; color: #6b7280;">recurring income</p>', 
-                   unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; color: #6b7280;">recurring income</p>', unsafe_allow_html=True)
     
     with col3:
         st.markdown('<p class="kpi-label">Allocation Quality</p>', unsafe_allow_html=True)
         st.markdown(f'<p class="big-kpi">{allocation_quality:.0f}</p>', unsafe_allow_html=True)
         delta_alloc = allocation_quality - 70
         st.markdown(f'<p style="text-align: center; color: {"green" if delta_alloc >= 0 else "red"};">'
-                   f'{"+" if delta_alloc >= 0 else ""}{delta_alloc:.0f} vs benchmark</p>', 
-                   unsafe_allow_html=True)
+                   f'{"+" if delta_alloc >= 0 else ""}{delta_alloc:.0f} vs benchmark</p>', unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # STEP 3: Strategic Insight Card (Feature Killer)
-    insight_color_map = {
-        'critical': '#dc2626',
-        'high': '#ea580c',
-        'medium': '#f59e0b',
-        'low': '#10b981',
-        'info': '#3b82f6'
-    }
-    
-    insight_bg = insight_color_map.get(strategic_insight['priority'], '#6b7280')
-    
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, {insight_bg} 0%, {insight_bg}dd 100%); 
-                padding: 25px; border-radius: 12px; color: white; margin: 20px 0;">
-        <div style="display: flex; align-items: center; margin-bottom: 10px;">
-            <span style="font-size: 1.5rem; margin-right: 10px;">💡</span>
-            <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">
-                Strategic Insight
-            </span>
+    # Top Vulnerability (STEP 1 implementation)
+    if vulnerabilities:
+        top_vuln = vulnerabilities[0]
+        vuln_class = 'vulnerability-card'
+        if top_vuln['priority'] == 'high':
+            vuln_class += ' medium'
+        elif top_vuln['priority'] in ['low', 'info']:
+            vuln_class += ' low'
+        
+        st.markdown(f"""
+        <div class="{vuln_class}">
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 1.5rem; margin-right: 10px;">⚠️</span>
+                <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                    Structural Vulnerability
+                </span>
+            </div>
+            <h3 style="margin: 10px 0; font-size: 1.3rem; font-weight: 700;">
+                {top_vuln['title']}
+            </h3>
+            <p style="margin: 15px 0 0 0; font-size: 1rem; line-height: 1.6;">
+                {top_vuln['message']}
+            </p>
+            <p style="margin-top: 15px; font-size: 0.85rem; opacity: 0.9;">
+                Potential Impact: +{top_vuln['impact_points']} Moat Points if addressed
+            </p>
         </div>
-        <h3 style="margin: 10px 0; font-size: 1.3rem; font-weight: 700;">
-            {strategic_insight['title']}
-        </h3>
-        <p style="margin: 15px 0 0 0; font-size: 1rem; line-height: 1.6; opacity: 0.95;">
-            {strategic_insight['message']}
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
     # Gauge principale
     health_score = (moat_score + allocation_quality) / 2
     
-    fig_main = go.Figure(go.Indicator(
+    fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=health_score,
-        domain={'x': [0, 1], 'y': [0, 1]},
         title={'text': "Overall Financial Health", 'font': {'size': 24, 'color': '#1e3a8a'}},
         gauge={
             'axis': {'range': [None, 100]},
@@ -588,233 +757,112 @@ if page == "📊 Dashboard":
                 {'range': [40, 70], 'color': "#fef3c7"},
                 {'range': [70, 100], 'color': "#d1fae5"}
             ],
-            'threshold': {
-                'line': {'color': "#059669", 'width': 4},
-                'thickness': 0.75,
-                'value': 85
-            }
+            'threshold': {'line': {'color': "#059669", 'width': 4}, 'thickness': 0.75, 'value': 85}
         }
     ))
-    
-    fig_main.update_layout(height=350, margin=dict(l=40, r=40, t=80, b=40))
-    st.plotly_chart(fig_main, use_container_width=True)
+    fig.update_layout(height=350, margin=dict(l=40, r=40, t=80, b=40))
+    st.plotly_chart(fig, use_container_width=True)
     
     # Quick insights
     col1, col2 = st.columns(2)
-    
     with col1:
         if health_score >= 80:
-            st.success("✓ Strong defensive position. Your financial moat is solid.")
+            st.success("✓ Strong defensive position")
         elif health_score >= 60:
-            st.info("→ Good foundation. Focus on strengthening weak points.")
+            st.info("→ Good foundation. Optimize weak points")
         else:
-            st.warning("⚠ Defensive gaps detected. Priority action needed.")
+            st.warning("⚠ Defensive gaps detected")
     
     with col2:
         net_worth = float(invest_metrics.get("total_assets", 0) or 0)
-        st.metric("Net Worth (€)", round(net_worth))
+        st.metric("Net Worth (€)", f"{net_worth:,.0f}")
         st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%")
+
+elif page == "🎯 Strategic Archetypes":
+    st.markdown("## Strategic Archetypes")
+    st.markdown("### Risk Models for Different Financial Profiles")
     
-    # Sezione secondaria
-    with st.expander("📊 Detailed Analytics", expanded=False):
-        
-        st.markdown("### Income & Expense Breakdown")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.metric("Total Income", f"€{moat_metrics['entrate_totali']:,.0f}")
-            st.metric("Recurring Income", f"{moat_metrics['percentuale_ricorrenti']:.1f}%")
-            st.metric("Income Sources", moat_metrics['fonti_entrate'])
-        
-        with col2:
-            st.metric("Fixed Expenses", f"€{moat_metrics['uscite_fisse']:,.0f}")
-            st.metric("Variable Expenses", f"€{moat_metrics['uscite_variabili']:,.0f}")
-            total_expenses = moat_metrics['uscite_fisse'] + moat_metrics['uscite_variabili']
-            st.metric("Total Expenses", f"€{total_expenses:,.0f}")
-        
-        # Trend chart
-        if len(df_filtered) > 0 and 'data' in df_filtered.columns:
-            df_filtered['mese'] = df_filtered['data'].dt.to_period('M').astype(str)
-            
-            entrate_mensili = df_filtered[df_filtered['direzione'] == 'Entrata'].groupby('mese')['importo'].sum()
-            uscite_mensili = df_filtered[df_filtered['direzione'] == 'Uscita'].groupby('mese')['importo'].sum()
-            
-            fig_trend = go.Figure()
-            
-            fig_trend.add_trace(go.Scatter(
-                x=entrate_mensili.index,
-                y=entrate_mensili.values,
-                name='Income',
-                line=dict(color='#10b981', width=2),
-                fill='tozeroy'
-            ))
-            
-            fig_trend.add_trace(go.Scatter(
-                x=uscite_mensili.index,
-                y=uscite_mensili.values,
-                name='Expenses',
-                line=dict(color='#ef4444', width=2)
-            ))
-            
-            fig_trend.update_layout(
-                title="Monthly Trends",
-                height=350,
-                hovermode='x unified',
-                plot_bgcolor='white'
-            )
-            
-            st.plotly_chart(fig_trend, use_container_width=True)
+    st.info("**Not user demographics. Risk archetypes.**\n\nThese are structural models of how different income strategies create different vulnerability patterns.")
     
-    # PRO CTA - STEP 2: Riposizionamento come Sistema Élite
-    st.markdown("---")
-    st.markdown("""
-    <div class="pro-banner">
-        <h2 style="margin: 0 0 10px 0; font-size: 1.8rem;">Moat Strategic Access</h2>
-        <p style="font-size: 1rem; margin-bottom: 5px; opacity: 0.9;">
-        Not a subscription. A relationship.
-        </p>
-        <p style="font-size: 1.15rem; margin: 20px 0; line-height: 1.6; font-weight: 500;">
-        Complete defensibility analysis • Long-term scenario modeling<br>
-        Allocation intelligence • Strategic advisory insights
-        </p>
-        <p style="font-size: 0.85rem; opacity: 0.8; font-style: italic; margin-bottom: 25px;">
-        Access is limited and granted selectively based on profile fit.
-        </p>
-        <div>
-            <a href="#access" class="pro-cta">🔒 Request Access</a>
-            <p style="font-size: 0.75rem; margin-top: 15px; opacity: 0.7;">
-            Requests are reviewed manually. Not all requests are accepted.
+    archetypes = get_strategic_archetypes()
+    
+    for key, archetype in archetypes.items():
+        st.markdown(f"""
+        <div class="archetype-card">
+            <h3 style="color: var(--moat-blue); margin: 0 0 10px 0;">
+                {archetype['label']}
+            </h3>
+            <p style="color: #6b7280; margin-bottom: 15px; font-style: italic;">
+                {archetype['description']}
             </p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Pricing table - STEP 2: Riposizionamento Pricing
-    with st.expander("💎 Access Tiers"):
-        st.markdown("""
-        ### Moat Access Structure
+        """, unsafe_allow_html=True)
         
-        **🌐 Moat Core** (Public / Demo)
-        - Basic defensibility dashboard
-        - 90-day data window
-        - Moat Score calculation
-        - Limited insights
-        
-        **Purpose:** Understand the framework
-        
-        ---
-        
-        **👑 Moat Strategic Access** (Selective)
-        - Complete defensibility analysis
-        - Unlimited historical data
-        - Advanced scenario modeling
-        - Strategic insights & allocation intelligence
-        - Long-term trend projections
-        - Data export capabilities
-        
-        **Investment:** €290/year or €49/month (by invitation only)
-        
-        **Important:** Access is granted selectively. Not all requests are accepted.  
-        We prioritize individuals with:
-        - Multiple income streams or complex financial situations
-        - Significant capital allocation decisions
-        - High autonomy in financial planning
-        - Long-term strategic orientation
-        
-        ---
-        
-        📧 **How to Request Access**
-        
-        Click "Request Strategic Access" in the sidebar.  
-        Requests are reviewed manually within 48-72 hours.
-        """)
-        
-        st.info("**Philosophy:** Moat Strategic Access is not about features.  \nIt's about giving the right tools to people who will use them to build something defensible.")
+        with st.expander(f"View {archetype['label']} Analysis"):
+            st.markdown("#### Key Structural Risks")
+            for risk in archetype['key_risks']:
+                st.markdown(f"• {risk}")
+            
+            st.markdown("#### Moat Priorities")
+            for priority, weight, note in archetype['moat_priorities']:
+                st.markdown(f"**{priority}** ({weight}% weight) — *{note}*")
+            
+            st.markdown("#### Typical Vulnerabilities")
+            for vuln in archetype['typical_vulnerabilities']:
+                st.markdown(f"⚠️ {vuln}")
+            
+            st.metric("Benchmark Moat Score", archetype['benchmark_score'])
+            
+            st.markdown("---")
+            st.info(f"**Strategic insight:** This archetype typically requires {archetype['benchmark_score']}+ Moat Score to achieve institutional-grade defensibility.")
 
-elif page == "📈 Analytics":
-    st.markdown("## Financial Analytics")
+elif page == "🔍 Vulnerabilities":
+    st.markdown("## Structural Vulnerabilities Analysis")
     
-    st.markdown("### Defensibility Components")
+    if not vulnerabilities:
+        st.success("### No Critical Vulnerabilities Detected")
+        st.markdown("Your financial system shows solid structural defensibility. Focus on optimization and growth opportunities.")
+    else:
+        st.markdown(f"### {len(vulnerabilities)} Vulnerability{'ies' if len(vulnerabilities) > 1 else 'y'} Identified")
+        
+        for idx, vuln in enumerate(vulnerabilities, 1):
+            priority_colors = {
+                'critical': '#dc2626',
+                'high': '#f59e0b',
+                'medium': '#10b981',
+                'low': '#3b82f6'
+            }
+            color = priority_colors.get(vuln['priority'], '#6b7280')
+            
+            st.markdown(f"""
+            <div style="border-left: 4px solid {color}; padding: 20px; margin: 15px 0; background: #f9fafb; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: {color};">
+                        #{idx} — {vuln['title']}
+                    </h4>
+                    <span style="background: {color}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; text-transform: uppercase;">
+                        {vuln['priority']}
+                    </span>
+                </div>
+                <p style="margin: 15px 0; color: #374151; line-height: 1.6;">
+                    {vuln['message']}
+                </p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                    <span style="font-size: 0.85rem; color: #6b7280;">
+                        Category: {vuln['category'].title()}
+                    </span>
+                    <span style="font-size: 0.9rem; font-weight: 600; color: {color};">
+                        Potential Impact: +{vuln['impact_points']} Moat Points
+                    </span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
     
-    categories = [
-        'Recurring\nIncome',
-        'Savings\nRate',
-        'Income\nDiversity',
-        'Asset\nAllocation'
-    ]
-    
-    values = [
-        min(moat_metrics.get('percentuale_ricorrenti', 0), 100) / 100 * 30,
-        max(0, min(moat_metrics.get('tasso_risparmio', 0), 50)) / 50 * 25,
-        min(moat_metrics.get('fonti_entrate', 0) / 5 * 15, 15),
-        min(invest_metrics.get('asset_types', 0) / 3 * 30, 30)
-    ]
-    
-    max_values = [30, 25, 15, 30]
-    
-    fig_radar = go.Figure()
-    
-    fig_radar.add_trace(go.Scatterpolar(
-        r=values,
-        theta=categories,
-        fill='toself',
-        name='Current',
-        line_color='#1e3a8a'
-    ))
-    
-    fig_radar.add_trace(go.Scatterpolar(
-        r=max_values,
-        theta=categories,
-        fill='toself',
-        name='Target',
-        line_color='#93c5fd',
-        opacity=0.3
-    ))
-    
-    fig_radar.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 30])),
-        showlegend=True,
-        height=450
-    )
-    
-    st.plotly_chart(fig_radar, use_container_width=True)
-    
-    # Breakdown dettagliato
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Recurring Income", f"{moat_metrics['percentuale_ricorrenti']:.0f}%")
-    
-    with col2:
-        st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.0f}%")
-    
-    with col3:
-        st.metric("Income Sources", moat_metrics['fonti_entrate'])
-    
-    with col4:
-        st.metric("Asset Types", invest_metrics['asset_types'])
-
-elif page == "🎯 Goals":
-    st.markdown("## Financial Goals")
-    
-    st.info("Set and track your financial objectives. PRO members get advanced goal tracking and notifications.")
-    
-    goals = [
-        {"name": "Reach 80% recurring income", "current": moat_metrics['percentuale_ricorrenti'], "target": 80},
-        {"name": "Achieve 30% savings rate", "current": max(0, moat_metrics['tasso_risparmio']), "target": 30},
-        {"name": "Diversify to 5 income sources", "current": moat_metrics['fonti_entrate'], "target": 5}
-    ]
-    
-    for idx, goal in enumerate(goals):
-        progress = min(goal['current'] / goal['target'], 1.0)
-        st.markdown(f"**{goal['name']}**")
-        st.progress(progress, text=f"{goal['current']:.1f} / {goal['target']}")
-        st.markdown("---")
+    st.markdown("---")
+    st.info("**PRO Feature:** Strategic Access members get personalized action plans for each vulnerability with timeline and resource requirements.")
 
 elif page == "ℹ️ About":
     st.markdown("## What is Moat?")
-    
     st.markdown("""
     ### A decision system that measures and strengthens the defensibility of your financial life.
     
@@ -825,91 +873,23 @@ elif page == "ℹ️ About":
     **Moat doesn't measure what you spend.**  
     **It measures how hard you are to destabilize.**
     
-    Traditional personal finance tools focus on:
-    - Budgeting
-    - Expense tracking
-    - Savings goals
+    ---
     
-    Moat focuses on:
-    - **Income stability** — How predictable is your cash flow?
-    - **Diversification** — How many failure points exist?
-    - **Allocation quality** — How strategically deployed is your capital?
-    - **Shock resistance** — How long can you sustain disruption?
+    #### Strategic Access
+    
+    Access is granted selectively based on:
+    - Profile fit (complexity, autonomy, strategic orientation)
+    - Current capacity
+    - Meaningful engagement potential
+    
+    **Not a subscription. A relationship.**
     
     ---
     
-    #### Who is Moat For?
-    
-    Moat is designed for individuals with:
-    
-    ✓ **High financial autonomy** — You make your own decisions  
-    ✓ **Multiple income streams** — Freelance, business, investments  
-    ✓ **Strategic mindset** — You think in systems, not tactics  
-    ✓ **Long-term orientation** — You're building, not just managing
-    
-    Moat is **not** for:
-    - Beginners learning to budget
-    - Household expense tracking
-    - Simple salary-based finances
-    
-    ---
-    
-    #### The Moat Score
-    
-    Your **Moat Score** (0-100) measures financial defensibility across:
-    
-    1. **Income Stability** (30 pts) — Recurring vs. volatile income
-    2. **Savings Capacity** (25 pts) — Margin between income and expenses
-    3. **Diversification** (15 pts) — Number of independent income sources
-    4. **Asset Allocation** (30 pts) — Quality and diversity of investments
-    
-    **Target:** 70+ for sustainable defensibility  
-    **Elite:** 85+ indicates institutional-grade resilience
-    
-    ---
-    
-    #### Strategic Access vs. Core
-    
-    **Moat Core** (Free)
-    - Understand the framework
-    - See your current score
-    - Track basic metrics
-    
-    **Moat Strategic Access** (Selective)
-    - Complete analysis & scenario modeling
-    - Advanced allocation intelligence
-    - Long-term trend projections
-    - Strategic insights that feel like consulting
-    
-    **Access is not automatic.** Requests are reviewed manually.
-    
-    ---
-    
-    #### Philosophy
-    
-    > "The best personal finance tool is not the one that tracks every euro.  
-    > It's the one that makes you harder to break."
-    
-    Moat is built for people who:
-    - Don't need to be told to save
-    - Want to optimize, not just monitor
-    - Think about financial decisions strategically
-    - Build systems, not spreadsheets
-    
-    ---
-    
-    **Ready to measure your defensibility?**
-    
-    Start with Moat Core, then request Strategic Access when you're ready for deeper analysis.
+    [Full documentation in About section]
     """)
-    
-    st.markdown("---")
-    
-    if st.button("🔒 Request Strategic Access", type="primary", use_container_width=True):
-        st.session_state['show_access_form'] = True
-        st.rerun()
 
-# Footer - STEP 1: Messaging coerente
+# Footer
 st.markdown("---")
 col1, col2 = st.columns([3, 1])
 with col1:
