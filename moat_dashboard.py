@@ -554,7 +554,7 @@ init_all_tables()
 
 # ==================== SIDEBAR ====================
 with st.sidebar:
-    st.image("https://via.placeholder.com/300x100/1e3a8a/ffffff?text=MOAT", use_container_width=True)
+    st.image("assets/logo_moat.png", use_container_width=True)
     
     st.markdown("---")
     
