@@ -1094,7 +1094,7 @@ elif page == "📈 Trajectory":
         yaxis_title="Months of Expenses Covered",
         height=400,
         hovermode='x unified'
-    ))
+    )
     
     st.plotly_chart(fig2, use_container_width=True)
     
