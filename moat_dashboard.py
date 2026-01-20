@@ -1062,7 +1062,7 @@ elif page == "📈 Trajectory":
         yaxis_title="Cumulative Savings (€)",
         height=400,
         hovermode='x unified'
-    ))
+    )
     
     st.plotly_chart(fig, use_container_width=True)
     
