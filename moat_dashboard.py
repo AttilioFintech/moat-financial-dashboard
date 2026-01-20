@@ -92,6 +92,23 @@ st.markdown("""
         margin: 10px;
         text-decoration: none;
     }
+    
+    .trajectory-box {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 5px solid #f59e0b;
+        padding: 25px;
+        border-radius: 10px;
+        margin: 20px 0;
+    }
+    
+    .onboarding-box {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 2px solid var(--moat-blue);
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        margin: 25px 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -178,7 +195,7 @@ def init_all_tables():
     
     conn.commit()
 
-# ==================== FUNZIONI DI CALCOLO ====================
+# ==================== STEP 1: CALCOLI REALI VULNERABILITY ====================
 
 def calculate_emergency_months(moat_metrics):
     """Calcola quanti mesi di copertura ha l'emergency fund"""
@@ -213,6 +230,94 @@ def calculate_expense_growth(moat_metrics):
     if fixed_ratio > 0.6:
         return round((fixed_ratio - 0.6) * 100, 1)
     return 0
+
+def calculate_income_concentration(moat_metrics):
+    """Calcola concentrazione del reddito"""
+    num_sources = moat_metrics.get('fonti_entrate', 1)
+    # Score inverso: più fonti = minore concentrazione
+    if num_sources >= 3:
+        return 20  # Bassa concentrazione
+    elif num_sources == 2:
+        return 50  # Media concentrazione
+    else:
+        return 85  # Alta concentrazione
+
+# ==================== STEP 1: WHAT-IF ENGINE CON 3 SLIDER ====================
+
+def whatif_engine(moat_metrics, income_change=0, expense_change=0, recurring_change=0):
+    """
+    What-If Scenario Engine
+    Returns: new metrics and score based on changes
+    """
+    new_metrics = moat_metrics.copy()
+    
+    # Applica variazioni
+    new_metrics['entrate_totali'] *= (1 + income_change/100)
+    new_metrics['entrate_ricorrenti'] *= (1 + recurring_change/100)
+    
+    total_expenses = new_metrics['uscite_fisse'] + new_metrics['uscite_variabili']
+    new_total_expenses = total_expenses * (1 + expense_change/100)
+    
+    # Ridistribuisci proporzionalmente
+    if total_expenses > 0:
+        ratio = new_metrics['uscite_fisse'] / total_expenses
+        new_metrics['uscite_fisse'] = new_total_expenses * ratio
+        new_metrics['uscite_variabili'] = new_total_expenses * (1 - ratio)
+    
+    # Ricalcola percentuali
+    if new_metrics['entrate_totali'] > 0:
+        new_metrics['percentuale_ricorrenti'] = (new_metrics['entrate_ricorrenti'] / new_metrics['entrate_totali']) * 100
+        new_metrics['tasso_risparmio'] = ((new_metrics['entrate_totali'] - new_total_expenses) / new_metrics['entrate_totali']) * 100
+    
+    # Ricalcola score
+    new_score = calculate_moat_score(new_metrics)
+    
+    return new_metrics, new_score
+
+# ==================== STEP 2: TRAJECTORY PROJECTION ====================
+
+def calculate_trajectory_projection(moat_metrics, months=12):
+    """
+    Proietta la traiettoria finanziaria per i prossimi N mesi
+    Returns: DataFrame con proiezione mese per mese
+    """
+    monthly_income = moat_metrics['entrate_totali']
+    monthly_expenses = moat_metrics['uscite_fisse'] + moat_metrics['uscite_variabili']
+    monthly_savings = monthly_income - monthly_expenses
+    
+    # Stima crescita spese (2% annuo = ~0.17% mensile)
+    expense_growth_rate = 0.0017
+    
+    # Assumiamo income stabile (scenario conservativo)
+    income_growth_rate = 0.0
+    
+    projection = []
+    cumulative_savings = max(monthly_savings * 3, 0)  # Starting emergency fund
+    
+    for month in range(months):
+        current_income = monthly_income * (1 + income_growth_rate * month)
+        current_expenses = monthly_expenses * (1 + expense_growth_rate * month)
+        current_savings = current_income - current_expenses
+        
+        cumulative_savings += current_savings
+        
+        # Calcola mesi di copertura
+        months_coverage = cumulative_savings / current_expenses if current_expenses > 0 else 0
+        
+        # Calcola savings rate
+        savings_rate = (current_savings / current_income * 100) if current_income > 0 else 0
+        
+        projection.append({
+            'month': month + 1,
+            'income': current_income,
+            'expenses': current_expenses,
+            'savings': current_savings,
+            'cumulative_savings': cumulative_savings,
+            'months_coverage': months_coverage,
+            'savings_rate': savings_rate
+        })
+    
+    return pd.DataFrame(projection)
 
 # ==================== STRATEGIC INSIGHTS ====================
 
@@ -558,12 +663,14 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Claim principale
+    # STEP 3: Onboarding forte
     st.markdown("""
-    <div style="padding: 20px; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
-                border-radius: 10px; margin-bottom: 20px;">
-        <p style="font-size: 1.1rem; color: white; font-weight: 700; margin: 0; line-height: 1.4;">
-        Moat helps you decide where to allocate your time, energy, and capital to maximize long-term financial resilience.
+    <div class="onboarding-box">
+        <p style="font-size: 1.4rem; font-weight: 700; color: var(--moat-blue); margin: 0 0 15px 0;">
+        You don't need all your data to start.
+        </p>
+        <p style="font-size: 1.1rem; color: #374151; margin: 0;">
+        You need the right signals.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -571,7 +678,7 @@ with st.sidebar:
     st.markdown("### Navigation")
     page = st.radio(
         "",
-        ["📊 Dashboard", "🎯 Strategic Archetypes", "🔍 Vulnerabilities", "ℹ️ About"],
+        ["📊 Dashboard", "🔮 What-If Scenarios", "📈 Trajectory", "🎯 Strategic Archetypes", "🔍 Vulnerabilities", "ℹ️ About"],
         label_visibility="collapsed"
     )
     
@@ -777,6 +884,233 @@ if page == "📊 Dashboard":
         net_worth = float(invest_metrics.get("total_assets", 0) or 0)
         st.metric("Net Worth (€)", f"{net_worth:,.0f}")
         st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%")
+
+# ==================== STEP 1: WHAT-IF SCENARIOS PAGE ====================
+elif page == "🔮 What-If Scenarios":
+    st.markdown("## What-If Scenario Engine")
+    st.markdown("### Model how changes affect your defensibility")
+    
+    st.info("**Strategic insight:** Small structural changes compound over time. Use this to test allocation decisions before committing.")
+    
+    st.markdown("---")
+    
+    # Current State
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### Current Position")
+        st.metric("Moat Score", f"{moat_score:.0f}")
+        st.metric("Monthly Income", f"€{moat_metrics['entrate_totali']:,.0f}")
+        st.metric("Savings Rate", f"{moat_metrics['tasso_risparmio']:.1f}%")
+    
+    with col2:
+        st.markdown("### Scenario Result")
+        # Placeholder - will update with sliders
+        st.empty()
+    
+    st.markdown("---")
+    st.markdown("### Adjust Variables")
+    
+    # 3 SLIDER (STEP 1)
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        income_change = st.slider(
+            "Income Change (%)",
+            min_value=-50,
+            max_value=100,
+            value=0,
+            step=5,
+            help="What if your income increased or decreased?"
+        )
+    
+    with col2:
+        expense_change = st.slider(
+            "Expense Change (%)",
+            min_value=-50,
+            max_value=100,
+            value=0,
+            step=5,
+            help="What if your expenses changed?"
+        )
+    
+    with col3:
+        recurring_change = st.slider(
+            "Recurring Income Change (%)",
+            min_value=-50,
+            max_value=100,
+            value=0,
+            step=5,
+            help="What if your recurring income changed?"
+        )
+    
+    # Calcola scenario
+    new_metrics, new_score = whatif_engine(moat_metrics, income_change, expense_change, recurring_change)
+    
+    # Mostra risultati
+    st.markdown("---")
+    st.markdown("### Scenario Impact")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        delta_score = new_score - moat_score
+        st.metric("New Moat Score", f"{new_score:.0f}", f"{delta_score:+.0f}")
+    
+    with col2:
+        new_savings_rate = new_metrics['tasso_risparmio']
+        delta_savings = new_savings_rate - moat_metrics['tasso_risparmio']
+        st.metric("New Savings Rate", f"{new_savings_rate:.1f}%", f"{delta_savings:+.1f}%")
+    
+    with col3:
+        new_recurring = new_metrics['percentuale_ricorrenti']
+        delta_recurring = new_recurring - moat_metrics['percentuale_ricorrenti']
+        st.metric("Recurring Income", f"{new_recurring:.0f}%", f"{delta_recurring:+.0f}%")
+    
+    with col4:
+        monthly_savings_current = moat_metrics['entrate_totali'] - (moat_metrics['uscite_fisse'] + moat_metrics['uscite_variabili'])
+        monthly_savings_new = new_metrics['entrate_totali'] - (new_metrics['uscite_fisse'] + new_metrics['uscite_variabili'])
+        delta_monthly = monthly_savings_new - monthly_savings_current
+        st.metric("Monthly Savings", f"€{monthly_savings_new:,.0f}", f"€{delta_monthly:+,.0f}")
+    
+    # Interpretazione
+    st.markdown("---")
+    
+    if delta_score > 5:
+        st.success(f"✓ **Strong improvement:** This scenario would increase your defensibility by {delta_score:.0f} points.")
+    elif delta_score > 0:
+        st.info(f"→ **Marginal improvement:** +{delta_score:.0f} points. Consider if effort justifies gain.")
+    elif delta_score < -5:
+        st.error(f"⚠ **Significant risk:** This would weaken your position by {abs(delta_score):.0f} points.")
+    else:
+        st.warning(f"→ **Neutral impact:** Minimal change ({delta_score:+.0f} points).")
+
+# ==================== STEP 2: TRAJECTORY PAGE ====================
+elif page == "📈 Trajectory":
+    st.markdown("## 12-Month Financial Trajectory")
+    st.markdown("### If nothing changes, here's where you're heading")
+    
+    # STEP 2: Copy forte
+    st.markdown("""
+    <div class="trajectory-box">
+        <h3 style="margin: 0 0 10px 0; color: #92400e;">
+            ⚠️ If nothing changes…
+        </h3>
+        <p style="margin: 0; font-size: 1.05rem; color: #451a03; line-height: 1.6;">
+            This projection assumes your current income and spending patterns continue unchanged. 
+            Small structural shifts today create exponentially different outcomes over time.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Calcola proiezione
+    projection_df = calculate_trajectory_projection(moat_metrics, months=12)
+    
+    # Current vs Final State
+    col1, col2, col3 = st.columns(3)
+    
+    final_month = projection_df.iloc[-1]
+    
+    with col1:
+        current_coverage = calculate_emergency_months(moat_metrics)
+        final_coverage = final_month['months_coverage']
+        delta_coverage = final_coverage - current_coverage
+        st.metric(
+            "Emergency Fund Coverage",
+            f"{final_coverage:.1f} months",
+            f"{delta_coverage:+.1f} (12 months)",
+            help="Projected months of expenses covered"
+        )
+    
+    with col2:
+        current_savings = moat_metrics['tasso_risparmio']
+        final_savings = final_month['savings_rate']
+        delta_savings_rate = final_savings - current_savings
+        st.metric(
+            "Savings Rate",
+            f"{final_savings:.1f}%",
+            f"{delta_savings_rate:+.1f}%",
+            help="Projected monthly savings rate"
+        )
+    
+    with col3:
+        cumulative = final_month['cumulative_savings']
+        st.metric(
+            "Cumulative Savings",
+            f"€{cumulative:,.0f}",
+            help="Total accumulated over 12 months"
+        )
+    
+    st.markdown("---")
+    
+    # Grafico traiettoria
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=projection_df['month'],
+        y=projection_df['cumulative_savings'],
+        mode='lines+markers',
+        name='Cumulative Savings',
+        line=dict(color='#1e3a8a', width=3),
+        marker=dict(size=8)
+    ))
+    
+    fig.update_layout(
+        title="Projected Cumulative Savings (12 Months)",
+        xaxis_title="Month",
+        yaxis_title="Cumulative Savings (€)",
+        height=400,
+        hovermode='x unified'
+    ))
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Grafico Coverage
+    fig2 = go.Figure()
+    
+    fig2.add_trace(go.Scatter(
+        x=projection_df['month'],
+        y=projection_df['months_coverage'],
+        mode='lines+markers',
+        name='Months Coverage',
+        line=dict(color='#059669', width=3),
+        marker=dict(size=8),
+        fill='tozeroy',
+        fillcolor='rgba(5, 150, 105, 0.1)'
+    ))
+    
+    # Target line at 6 months
+    fig2.add_hline(
+        y=6,
+        line_dash="dash",
+        line_color="red",
+        annotation_text="Target: 6 months"
+    )
+    
+    fig2.update_layout(
+        title="Emergency Fund Coverage Trajectory",
+        xaxis_title="Month",
+        yaxis_title="Months of Expenses Covered",
+        height=400,
+        hovermode='x unified'
+    ))
+    
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # Interpretazione
+    st.markdown("---")
+    st.markdown("### Strategic Interpretation")
+    
+    if final_coverage >= 6:
+        st.success(f"✓ **On track:** You'll reach institutional-grade resilience ({final_coverage:.1f} months) within 12 months at current pace.")
+    elif final_coverage >= 3:
+        st.info(f"→ **Moderate progress:** You'll reach {final_coverage:.1f} months coverage. Consider accelerating to reach 6-month target.")
+    else:
+        st.warning(f"⚠ **Insufficient trajectory:** At current pace, you'll only reach {final_coverage:.1f} months. Structural changes needed.")
+    
+    st.markdown("---")
+    st.info("**PRO Feature:** Strategic Access members can model custom scenarios with variable growth rates, income shocks, and expense optimization strategies.")
 
 elif page == "🎯 Strategic Archetypes":
     st.markdown("## Strategic Archetypes")
