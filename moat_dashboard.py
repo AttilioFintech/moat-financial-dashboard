@@ -7,7 +7,6 @@ from pages.vulnerabilities import render as vulnerabilities_page
 from pages.archetypes import render as archetypes_page
 from pages.about import render as about_page
 
-E poi:
 
 page = st.sidebar.radio(
     "Navigation",
