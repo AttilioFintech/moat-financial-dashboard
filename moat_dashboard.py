@@ -49,10 +49,6 @@ st.sidebar.markdown(
     are available via selective access.
     """
 )
-
-# =============================
-# PAGE ROUTING
-# =============================
 if page == "dashboard":
     from pages.dashboard import render
     render()
@@ -79,3 +75,4 @@ elif page == "about":
 
 else:
     st.error("Page not found.")
+
