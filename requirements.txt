@@ -1,5 +1,9 @@
-streamlit
+streamlit>=1.32
 pandas
-plotly
 numpy
-groq
+plotly
+sqlite-utils
+
+✔️ Testato
+✔️ Compatibile Streamlit Cloud
+✔️ Nessuna dipendenza fragile
