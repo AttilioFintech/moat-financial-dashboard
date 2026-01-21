@@ -3,7 +3,3 @@ pandas
 numpy
 plotly
 sqlite-utils
-
-✔️ Testato
-✔️ Compatibile Streamlit Cloud
-✔️ Nessuna dipendenza fragile
