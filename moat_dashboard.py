@@ -1,10 +1,5 @@
 import streamlit as st
-from pages.dashboard import render as dashboard_page
-from pages.trajectory import render as trajectory_page
-from pages.whatif import render as whatif_page
-from pages.vulnerabilities import render as vulnerabilities_page
-from pages.archetypes import render as archetypes_page
-from pages.about import render as about_page
+
 
 
 # =============================
