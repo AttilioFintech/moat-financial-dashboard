@@ -11,3 +11,4 @@ def expense_growth_risk(growth_rate):
         return "Cost Creep Risk"
     if growth_rate > 5:
         return "Monitoring Required"
+    return "Stable"
