@@ -5,6 +5,15 @@ from src.whatif import render as whatif_page
 from src.vulnerabilities import render as vulnerabilities_page
 from src.archetypes import render as archetypes_page
 from src.about import render as about_page
+def project_savings(current_savings, monthly_delta, months=12):
+    projections = []
+    value = current_savings
+
+    for _ in range(months):
+        value += monthly_delta
+        projections.append(value)
+
+    return projections
 
 st.set_page_config(
     page_title="Moat – Strategic Financial Resilience",
