@@ -1,3 +1,4 @@
+import streamlit as st
 from core.metrics import calculate_emergency_months
 from core.scoring import calculate_moat_score
 
