@@ -1,6 +1,11 @@
+from utils import pro_gate
 import streamlit as st
 
 def render():
-    st.header("🔮 What-If Scenarios")
-    st.write("Scenario simulation engine")
+    if not st.session_state.get("is_pro"):
+        pro_gate("What-If Scenarios")
+        return
+
+    # ⬇️ SOLO QUI entra il vero engine
+    st.slider("Income Change", -50, 100, 0)
 
