@@ -1,5 +1,4 @@
 import streamlit as st
-
 from src.dashboard import render as dashboard_page
 from src.trajectory import render as trajectory_page
 from src.whatif import render as whatif_page
