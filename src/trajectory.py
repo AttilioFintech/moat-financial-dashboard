@@ -1,5 +1,5 @@
-from src.utils import pro_gate
 import streamlit as st
+from src.utils import pro_gate
 
 def render():
     if not st.session_state.get("is_pro"):
