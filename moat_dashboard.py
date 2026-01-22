@@ -5,6 +5,15 @@ from src.whatif import render as whatif_page
 from src.vulnerabilities import render as vulnerabilities_page
 from src.archetypes import render as archetypes_page
 from src.about import render as about_page
+
+# -------------------------
+# SESSION INIT – PRO FLAG
+# -------------------------
+if "is_pro" not in st.session_state:
+    st.session_state.is_pro = False   # default
+    # In futuro → login / invite / whitelist
+    # st.session_state.is_pro = check_user_pro_status()
+
 def project_savings(current_savings, monthly_delta, months=12):
     projections = []
     value = current_savings
@@ -43,7 +52,13 @@ PAGE_MAP = {
 
 page_label = st.sidebar.radio("Navigate", list(PAGE_MAP.keys()))
 
+# -------------------------
+# PRO BADGE (semplice, elegante)
+# -------------------------
 st.sidebar.divider()
-st.sidebar.markdown("🔒 **PRO ACCESS**")
+if st.session_state.is_pro:
+    st.sidebar.success("🔓 PRO Enabled")
+else:
+    st.sidebar.info("🔒 PRO Locked")
 
 PAGE_MAP[page_label]()
