@@ -7,3 +7,5 @@ def calculate_moat_score(metrics):
         score -= 15
     if metrics["income_concentration"] > 70:
         score -= 20
+
+    return max(score, 0)
