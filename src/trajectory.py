@@ -1,4 +1,4 @@
-from utils import pro_gate
+from src.utils import pro_gate
 import streamlit as st
 
 def render():
