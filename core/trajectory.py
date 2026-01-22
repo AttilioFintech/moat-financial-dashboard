@@ -5,3 +5,5 @@ def project_savings(current_savings, monthly_delta, months=12):
     for _ in range(months):
         value += monthly_delta
         projections.append(value)
+
+    return projections
