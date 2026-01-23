@@ -7,22 +7,10 @@ from src.archetypes import render as archetypes_page
 from src.about import render as about_page
 
 # -------------------------
-# SESSION INIT – PRO FLAG
+# SESSION INIT
 # -------------------------
 if "is_pro" not in st.session_state:
-    st.session_state.is_pro = False   # default
-    # In futuro → login / invite / whitelist
-    # st.session_state.is_pro = check_user_pro_status()
-
-def project_savings(current_savings, monthly_delta, months=12):
-    projections = []
-    value = current_savings
-
-    for _ in range(months):
-        value += monthly_delta
-        projections.append(value)
-
-    return projections
+    st.session_state.is_pro = False
 
 st.set_page_config(
     page_title="Moat – Strategic Financial Resilience",
@@ -30,14 +18,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# -------------------------
+# SIDEBAR
+# -------------------------
 st.sidebar.title("🏰 MOAT")
 
 st.sidebar.markdown(
     """
-    **Strategic Financial Resilience Tool**
+    **Strategic Financial Resilience**
     
     Moat helps you decide **where to allocate**
-    your time, energy, and capital.
+    time, energy, and capital.
     """
 )
 
@@ -53,12 +44,31 @@ PAGE_MAP = {
 page_label = st.sidebar.radio("Navigate", list(PAGE_MAP.keys()))
 
 # -------------------------
-# PRO BADGE (semplice, elegante)
+# PRO STATUS
 # -------------------------
 st.sidebar.divider()
-if st.session_state.is_pro:
-    st.sidebar.success("🔓 PRO Enabled")
-else:
-    st.sidebar.info("🔒 PRO Locked")
 
+if st.session_state.is_pro:
+    st.sidebar.success("🔓 **Strategic Access Enabled**")
+else:
+    st.sidebar.markdown("### 🔐 Strategic Access")
+    
+    st.sidebar.markdown(
+        """
+        Moat PRO is reserved for individuals who
+        actively manage **capital, leverage, and risk**.
+        
+        Access is reviewed manually.
+        """
+    )
+    
+    if st.sidebar.button("Request Strategic Access", use_container_width=True):
+        st.sidebar.success("✅ Request received. Priority queue assigned.")
+        # TODO: Collect email + send to Airtable/Notion
+
+# -------------------------
+# RENDER PAGE
+# -------------------------
 PAGE_MAP[page_label]()
+
+
