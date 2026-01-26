@@ -4,8 +4,28 @@ from core.scoring import calculate_moat_score
 
 def render():
     # ============================================
+    # ONBOARDING CHECK
+    # ============================================
+    
+    if not st.session_state.get("onboarding_complete", False):
+        st.warning(
+            """
+            **⚙️ Strategic Setup Required**
+            
+            Complete the 3-question setup to calibrate your Moat Score.
+            
+            Navigate to **Strategic Setup** in the sidebar.
+            """
+        )
+        st.stop()
+    
+    # ============================================
     # STRATEGIC ALERT BLOCK (sempre visibile)
     # ============================================
+    
+    # Recupera archetype
+    archetype = st.session_state.get("archetype", {})
+    alert_sensitivity = archetype.get("alert_sensitivity", "medium")
     
     # Calcolo metriche preliminari
     emergency_months = calculate_emergency_months(12000, 2500)
@@ -18,11 +38,25 @@ def render():
     })
     
     # 🔴 STRATEGIC RISK DETECTION
-    # Logica: mostra alert se almeno una condizione è vera
+    # Logica: thresholds variano in base a alert_sensitivity
+    
+    if alert_sensitivity == "high":
+        emergency_threshold = 6
+        concentration_threshold = 60
+        score_threshold = 75
+    elif alert_sensitivity == "low":
+        emergency_threshold = 4
+        concentration_threshold = 75
+        score_threshold = 65
+    else:  # medium (default)
+        emergency_threshold = 5
+        concentration_threshold = 65
+        score_threshold = 70
+    
     show_alert = (
-        emergency_months < 6 or 
-        income_concentration > 65 or 
-        score < 70
+        emergency_months < emergency_threshold or 
+        income_concentration > concentration_threshold or 
+        score < score_threshold
     )
     
     if show_alert:
@@ -53,6 +87,11 @@ def render():
     # ============================================
     # MOAT SCORE (posizione secondaria)
     # ============================================
+    
+    st.markdown(f"### Your Position: **{archetype.get('name', 'Operator')}**")
+    st.caption(archetype.get('description', ''))
+    
+    st.markdown("---")
     
     col1, col2, col3 = st.columns(3)
     
