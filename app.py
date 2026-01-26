@@ -1,5 +1,5 @@
 import streamlit as st
-from src import dashboard, onboarding, archetypes, whatif, trajectory, vulnerabilities, stress_test, about
+from src import dashboard, onboarding, archetypes, whatif, trajectory, vulnerabilities, stress_test, comparison, about
 
 # ============================================
 # PAGE CONFIG
@@ -50,6 +50,7 @@ with st.sidebar:
                 "What-If",
                 "Trajectory",
                 "Stress Test",
+                "Benchmarks",
                 "Archetypes",
                 "About"
             ],
@@ -90,6 +91,8 @@ elif page == "Trajectory":
     trajectory.render()
 elif page == "Stress Test":
     stress_test.render()
+elif page == "Benchmarks":
+    comparison.render()
 elif page == "Archetypes":
     archetypes.render()
 elif page == "About":
