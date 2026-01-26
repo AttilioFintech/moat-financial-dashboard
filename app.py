@@ -1,4 +1,10 @@
 import streamlit as st
+from src.dashboard import render as dashboard_page
+from src.trajectory import render as trajectory_page
+from src.whatif import render as whatif_page
+from src.vulnerabilities import render as vulnerabilities_page
+from src.archetypes import render as archetypes_page
+from src.about import render as about_page
 from src import dashboard, onboarding, archetypes, whatif, trajectory, vulnerabilities, about
 
 # ============================================
