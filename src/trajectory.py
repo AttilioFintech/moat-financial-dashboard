@@ -5,10 +5,11 @@ from src.utils.pro_gate import pro_gate
 def render():
     st.title("📈 12-Month Trajectory")
     
-    # ✅ PRO GATE
+    ✅ PRO GATE
     pro_gate(
         "Trajectory Projection",
-        "See how your current habits compound into future financial position."
+        "See how your current structure compounds into future positioning. "
+        "What others discover after 12 months, you see now."
     )
     
     # ⬇️ SOLO i PRO arrivano qui
