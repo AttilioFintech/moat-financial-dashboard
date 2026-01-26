@@ -7,7 +7,8 @@ def render():
     # ✅ PRO GATE
     pro_gate(
         "What-If Engine",
-        "Model the impact of life changes on your financial position in real-time."
+        "Test decisions **before committing time, capital, or reputation**. "
+        "Strategic operators simulate consequences before acting."
     )
     
     # ⬇️ SOLO i PRO arrivano qui
