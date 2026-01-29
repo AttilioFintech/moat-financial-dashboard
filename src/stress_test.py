@@ -31,13 +31,20 @@ def render():
     # BASE METRICS INPUT
     # ============================================
     
+    # Load user data for defaults
+    financials = st.session_state.get("user_financials", {})
+    
+    default_income = financials.get("monthly_income", 8000)
+    default_expenses = financials.get("monthly_expenses", 5000)
+    default_emergency = financials.get("emergency_fund", 12000)
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
         monthly_income = st.number_input(
             "Monthly Income ($)",
             min_value=0,
-            value=8000,
+            value=int(default_income),
             step=500
         )
     
@@ -45,7 +52,7 @@ def render():
         monthly_expenses = st.number_input(
             "Monthly Expenses ($)",
             min_value=0,
-            value=5000,
+            value=int(default_expenses),
             step=500
         )
     
@@ -53,7 +60,7 @@ def render():
         emergency_fund = st.number_input(
             "Emergency Fund ($)",
             min_value=0,
-            value=12000,
+            value=int(default_emergency),
             step=1000
         )
     

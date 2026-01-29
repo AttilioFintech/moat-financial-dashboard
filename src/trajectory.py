@@ -32,13 +32,20 @@ def render():
     # TRAJECTORY CONTROLS
     # ============================================
     
+    # Load user data for defaults
+    financials = st.session_state.get("user_financials", {})
+    
+    default_savings = financials.get("emergency_fund", 10000)
+    default_surplus = financials.get("monthly_income", 5000) - financials.get("monthly_expenses", 3000)
+    default_expenses = financials.get("monthly_expenses", 2500)
+    
     col1, col2 = st.columns(2)
     
     with col1:
         current_savings = st.number_input(
             "Current Liquid Savings ($)",
             min_value=0,
-            value=10000,
+            value=int(default_savings),
             step=1000,
             help="Cash + immediately accessible reserves"
         )
@@ -46,7 +53,7 @@ def render():
     with col2:
         monthly_surplus = st.number_input(
             "Average Monthly Surplus ($)",
-            value=500,
+            value=int(default_surplus),
             step=100,
             help="Typical income minus expenses (after all obligations)"
         )
@@ -160,8 +167,8 @@ def render():
     st.markdown("### Strategic Context")
     
     # Emergency coverage projection
-    monthly_expenses = 2500  # Da parametrizzare
-    final_emergency_months = savings_projection[-1] / monthly_expenses
+    monthly_expenses = default_expenses
+    final_emergency_months = savings_projection[-1] / monthly_expenses if monthly_expenses > 0 else 0
     
     if final_emergency_months >= 12:
         st.success(

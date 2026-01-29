@@ -66,13 +66,21 @@ def render():
     # SCENARIO CALCULATION
     # ============================================
     
-    # Base metrics (hardcoded for now, da sostituire con user data)
+    # Load user data
+    financials = st.session_state.get("user_financials")
+    
+    if not financials:
+        st.error("Financial data not found. Complete onboarding first.")
+        st.stop()
+    
+    # Base metrics from real data
     base_metrics = {
-        "income": 8000,
-        "expenses": 5000,
-        "emergency_months": 4.8,
-        "expense_growth": 8,
-        "income_concentration": 75
+        "income": financials["monthly_income"],
+        "expenses": financials["monthly_expenses"],
+        "emergency_months": financials["emergency_fund"] / financials["monthly_expenses"] if financials["monthly_expenses"] > 0 else 0,
+        "expense_growth": 8,  # TODO: calculate from historical
+        "income_concentration": financials["income_concentration"],
+        "emergency_fund": financials["emergency_fund"]
     }
     
     # Applica scenario

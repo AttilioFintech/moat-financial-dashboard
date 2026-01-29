@@ -20,6 +20,16 @@ def render():
         st.stop()
     
     # ============================================
+    # LOAD USER DATA
+    # ============================================
+    
+    financials = st.session_state.get("user_financials")
+    
+    if not financials:
+        st.error("Financial data not found. Please complete onboarding again.")
+        st.stop()
+    
+    # ============================================
     # STRATEGIC ALERT BLOCK (sempre visibile)
     # ============================================
     
@@ -27,9 +37,12 @@ def render():
     archetype = st.session_state.get("archetype", {})
     alert_sensitivity = archetype.get("alert_sensitivity", "medium")
     
-    # Calcolo metriche preliminari
-    emergency_months = calculate_emergency_months(12000, 2500)
-    income_concentration = 60  # Da parametrizzare con dati reali
+    # Calcolo metriche da dati reali
+    emergency_months = calculate_emergency_months(
+        financials["emergency_fund"],
+        financials["monthly_expenses"]
+    )
+    income_concentration = financials["income_concentration"]
     
     score = calculate_moat_score({
         "emergency_months": emergency_months,

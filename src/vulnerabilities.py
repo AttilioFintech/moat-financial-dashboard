@@ -61,11 +61,23 @@ def identify_top_risk(metrics):
 def render():
     st.title("🛡️ Strategic Vulnerabilities")
     
-    # Simulazione metriche (da sostituire con dati reali)
+    # Load user data
+    financials = st.session_state.get("user_financials")
+    
+    if not financials:
+        st.error("Financial data not found. Complete onboarding first.")
+        st.stop()
+    
+    # Calculate metrics from real data
+    from core.metrics import calculate_emergency_months
+    
     metrics = {
-        "emergency_months": 4.8,
-        "income_concentration": 75,
-        "expense_growth": 8
+        "emergency_months": calculate_emergency_months(
+            financials["emergency_fund"],
+            financials["monthly_expenses"]
+        ),
+        "income_concentration": financials["income_concentration"],
+        "expense_growth": 8  # TODO: calcolare da historical data quando disponibile
     }
     
     # Identifica IL rischio dominante
