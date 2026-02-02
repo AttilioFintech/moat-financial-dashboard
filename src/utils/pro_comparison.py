@@ -1,3 +1,8 @@
+"""
+PRO-exclusive: Operator comparison insights
+Mostra cosa fanno operatori simili in condizioni simili
+"""
+
 def get_archetype_benchmarks(archetype_name):
     """
     Restituisce benchmark per archetype.
@@ -86,10 +91,17 @@ def get_scenario_recommendations(archetype_name, scenario_type):
     """
     Restituisce cosa fanno operators simili in scenario specifico.
     
+    ⚠️ PRO ONLY - Questa funzione richiede Strategic Access
+    
     Args:
         archetype_name: str
         scenario_type: "income_loss" | "income_gain" | "expense_increase"
+    
+    Returns:
+        list of str: recommendations
     """
+    # This function should only be called after PRO gate check
+    # It's the caller's responsibility to verify PRO status
     
     recommendations = {
         "Stable Operator": {
